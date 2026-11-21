@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
+import BrandLogo from "./BrandLogo";
 import {
   FinancialIcon,
   FitnessIcon,
@@ -12,13 +12,20 @@ import {
   SearchIcon,
   HistoryIcon,
   CloseIcon,
+  MoonIcon,
+  SunIcon,
 } from "./Icons";
-import ThemeToggle from "./ThemeToggle";
+import ThemeToggle, { applyTheme, type ThemeMode } from "./ThemeToggle";
 
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return "dark";
+    const saved = localStorage.getItem("allinone_theme") as ThemeMode | null;
+    return saved === "light" ? "light" : "dark";
+  });
 
   // Close mobile menu on page navigation
   if (pathname !== prevPathname) {
@@ -37,6 +44,25 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [mobileMenuOpen]);
+
+  // Keep track of current theme for mobile drawer switcher
+  useEffect(() => {
+    const onThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ theme: ThemeMode }>;
+      if (customEvent.detail && customEvent.detail.theme) {
+        setCurrentTheme(customEvent.detail.theme);
+      }
+    };
+    window.addEventListener("theme-changed", onThemeChange);
+    return () => window.removeEventListener("theme-changed", onThemeChange);
+  }, []);
+
+  const setDrawerTheme = (mode: ThemeMode) => {
+    setCurrentTheme(mode);
+    localStorage.setItem("allinone_theme", mode);
+    applyTheme(mode);
+    window.dispatchEvent(new CustomEvent("set-theme", { detail: { theme: mode } }));
+  };
 
   const navLinks = [
     { label: "Financial", href: "/financial-calculator", icon: <FinancialIcon size={16} /> },
@@ -66,15 +92,9 @@ export default function Navbar() {
   return (
     <header className="site-header">
       <div className="header-container">
-        {/* Brand Logo */}
+        {/* Brand Logo with vector SVG */}
         <Link href="/" className="header-logo" aria-label="All-in-one-calculator Home">
-          <Image
-            src="/img/svg/allinone-logo.svg"
-            alt="All-in-one-calculator"
-            width={240}
-            height={34}
-            priority
-          />
+          <BrandLogo height={32} />
         </Link>
 
         {/* Desktop Nav Pills */}
@@ -94,7 +114,7 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Action buttons: Search, History, Theme, About */}
+        {/* Action buttons: Search, History, Theme, About, Hamburger */}
         <div className="header-actions">
           {/* Quick Search Button (opens Ctrl+K command palette) */}
           <button
@@ -104,7 +124,7 @@ export default function Navbar() {
             title="Search Calculators (Ctrl+K)"
             aria-label="Search all calculators"
           >
-            <SearchIcon size={17} />
+            <SearchIcon size={20} />
             <span className="header-search-text">Search</span>
             <kbd className="header-search-kbd">⌘K</kbd>
           </button>
@@ -112,25 +132,25 @@ export default function Navbar() {
           {/* Activity / History Drawer Button */}
           <button
             type="button"
-            className="header-icon-btn"
+            className="header-icon-btn header-history-btn"
             onClick={() => openDrawer("history")}
             title="Recent Calculations & Favorites"
             aria-label="Open recent calculations"
           >
-            <HistoryIcon size={17} />
+            <HistoryIcon size={20} />
           </button>
 
-          {/* Theme Toggle (Light / Dark / Auto) */}
+          {/* Theme Toggle Button */}
           <ThemeToggle />
 
           <Link href="/about-us" className="header-about-link">
             About
           </Link>
 
-          {/* Mobile Hamburger Toggle */}
+          {/* Mobile Hamburger Toggle (44px x 44px touch target) */}
           <button
             type="button"
-            className="mobile-hamburger-btn"
+            className={`mobile-hamburger-btn ${mobileMenuOpen ? "active" : ""}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Close menu" : "Open navigation menu"}
             aria-expanded={mobileMenuOpen}
@@ -157,7 +177,7 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 aria-label="Close menu"
               >
-                <CloseIcon size={18} />
+                <CloseIcon size={20} />
               </button>
             </div>
 
@@ -165,26 +185,49 @@ export default function Navbar() {
             <div className="mobile-action-bar">
               <button
                 type="button"
-                className="mobile-action-btn"
+                className="mobile-action-btn search-action"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   openSearch();
                 }}
               >
-                <SearchIcon size={16} />
-                <span>Quick Search (⌘K)</span>
+                <SearchIcon size={18} />
+                <span>Search 200+ Calculators (⌘K)</span>
               </button>
               <button
                 type="button"
-                className="mobile-action-btn"
+                className="mobile-action-btn history-action"
                 onClick={() => {
                   setMobileMenuOpen(false);
                   openDrawer("history");
                 }}
               >
-                <HistoryIcon size={16} />
-                <span>Recent History</span>
+                <HistoryIcon size={18} />
+                <span>Recent Calculations</span>
               </button>
+            </div>
+
+            {/* Mobile Theme Segmented Switcher */}
+            <div className="mobile-theme-bar">
+              <span className="mobile-theme-label">Theme:</span>
+              <div className="mobile-theme-toggle-group">
+                <button
+                  type="button"
+                  className={`mobile-theme-btn ${currentTheme === "dark" ? "active" : ""}`}
+                  onClick={() => setDrawerTheme("dark")}
+                >
+                  <MoonIcon size={16} color={currentTheme === "dark" ? "#38bdf8" : "var(--text-muted)"} />
+                  <span>Black Theme</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-theme-btn ${currentTheme === "light" ? "active" : ""}`}
+                  onClick={() => setDrawerTheme("light")}
+                >
+                  <SunIcon size={16} color={currentTheme === "light" ? "#f59e0b" : "var(--text-muted)"} />
+                  <span>Light Mode</span>
+                </button>
+              </div>
             </div>
 
             <div className="mobile-category-grid">

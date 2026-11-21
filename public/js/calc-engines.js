@@ -1028,7 +1028,7 @@ engines['gpa-calculator'] = function () {
     c.innerHTML = '<div class="result-card">' +
       '<h2 class="h2result">GPA Planning Result</h2>' +
       '<p class="verybigtext" style="color:' + neededColor + '">Required Future GPA: <b>' + neededGPA.toFixed(2) + '</b></p>' +
-      '<p style="font-size:14px;color:#334155;margin-bottom:12px;">' +
+      '<p style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">' +
       'To raise your GPA from <b>' + curGPA.toFixed(2) + '</b> to <b>' + targetGPA.toFixed(2) + '</b> across <b>' + addCred + '</b> new credits, you must maintain an average GPA of <b>' + neededGPA.toFixed(2) + '</b>.' +
       '</p>' +
       '<table class="cinfoT" width="100%">' +
@@ -1037,7 +1037,7 @@ engines['gpa-calculator'] = function () {
       '<tr><td>Target Cumulative GPA:</td><td align="right"><b>' + targetGPA.toFixed(2) + '</b></td></tr>' +
       '<tr><td>Current Credits Earned:</td><td align="right"><b>' + curCred + '</b></td></tr>' +
       '<tr><td>Additional Credits to Take:</td><td align="right"><b>' + addCred + '</b></td></tr>' +
-      '<tr style="background:#f0fdf4;"><td><b>Minimum GPA Needed in Future Courses:</b></td><td align="right" style="color:' + neededColor + ';font-size:16px;"><b>' + neededGPA.toFixed(2) + '</b></td></tr>' +
+      '<tr style="background:var(--color-success-bg);"><td><b>Minimum GPA Needed in Future Courses:</b></td><td align="right" style="color:' + neededColor + ';font-size:16px;"><b>' + neededGPA.toFixed(2) + '</b></td></tr>' +
       '</table>' +
       '</div>';
     if (typeof c.scrollIntoView === 'function') c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1113,8 +1113,8 @@ engines['gpa-calculator'] = function () {
     '<table class="cinfoT" width="100%">' +
     '<tr><td class="cinfoHd">Course</td><td class="cinfoHdL" align="center">Credits</td><td class="cinfoHdL" align="center">Grade</td><td class="cinfoHdL" align="right">Grade Points</td></tr>' +
     rowsHtml +
-    '<tr style="background:#f1f5f9;font-weight:700;"><td>Total</td><td align="center">' + totalCredits + '</td><td align="center">-</td><td align="right">' + totalPoints.toFixed(1) + '</td></tr>' +
-    '<tr style="background:#f0fdf4;"><td colspan="2"><b>Overall GPA:</b></td><td colspan="2" align="right" style="font-size:18px;color:#059669;"><b>' + gpa.toFixed(2) + ' / 4.0</b></td></tr>' +
+    '<tr style="background:var(--bg-card-subtle);font-weight:700;"><td>Total</td><td align="center">' + totalCredits + '</td><td align="center">-</td><td align="right">' + totalPoints.toFixed(1) + '</td></tr>' +
+    '<tr style="background:var(--color-success-bg);"><td colspan="2"><b>Overall GPA:</b></td><td colspan="2" align="right" style="font-size:18px;color:#059669;"><b>' + gpa.toFixed(2) + ' / 4.0</b></td></tr>' +
     '</table>' +
     '</div>';
   if (typeof c.scrollIntoView === 'function') c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1183,13 +1183,13 @@ engines['grade-calculator'] = function () {
     c.innerHTML = '<div class="result-card">' +
       '<h2 class="h2result">Final Exam Target Result</h2>' +
       '<p class="verybigtext" style="color: ' + statusColor + ';">Grade Needed on Final: <b>' + needed.toFixed(1) + '%</b></p>' +
-      '<p style="font-size:14px;color:#334155;margin-bottom:14px;">' + statusMsg + '</p>' +
+      '<p style="font-size:14px;color:var(--text-secondary);margin-bottom:14px;">' + statusMsg + '</p>' +
       '<table class="cinfoT" width="100%">' +
       '<tr><td class="cinfoHd" colspan="2">Calculation Breakdown</td></tr>' +
       '<tr><td>Current Course Grade:</td><td align="right"><b>' + cur + '%</b></td></tr>' +
       '<tr><td>Target Course Grade:</td><td align="right"><b>' + target + '%</b></td></tr>' +
       '<tr><td>Final Exam Weight:</td><td align="right"><b>' + (weight * 100).toFixed(0) + '%</b></td></tr>' +
-      '<tr style="background:#f0fdf4;"><td><b>Score Required on Final:</b></td><td align="right" style="color:' + statusColor + ';font-size:16px;"><b>' + needed.toFixed(1) + '%</b></td></tr>' +
+      '<tr style="background:var(--color-success-bg);"><td><b>Score Required on Final:</b></td><td align="right" style="color:' + statusColor + ';font-size:16px;"><b>' + needed.toFixed(1) + '%</b></td></tr>' +
       '</table>' +
       '</div>';
     if (typeof c.scrollIntoView === 'function') c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1258,7 +1258,7 @@ engines['grade-calculator'] = function () {
       '<tr><td>Current Grade:</td><td align="right"><b>' + curFallback + '%</b></td></tr>' +
       '<tr><td>Target Class Grade:</td><td align="right"><b>' + targetFallback + '%</b></td></tr>' +
       '<tr><td>Final Exam Weight:</td><td align="right"><b>' + (weightFallback * 100).toFixed(0) + '%</b></td></tr>' +
-      '<tr style="background:#f0fdf4;"><td><b>Score Required on Final:</b></td><td align="right"><b>' + neededFallback.toFixed(1) + '%</b></td></tr>' +
+      '<tr style="background:var(--color-success-bg);"><td><b>Score Required on Final:</b></td><td align="right"><b>' + neededFallback.toFixed(1) + '%</b></td></tr>' +
       '</table>' +
       '</div>';
     if (typeof c.scrollIntoView === 'function') c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1298,11 +1298,11 @@ engines['grade-calculator'] = function () {
   c.innerHTML = '<div class="result-card">' +
     '<h2 class="h2result">Current Grade Result</h2>' +
     '<p class="verybigtext" style="color:#059669;margin-bottom:4px;">Weighted Grade: <b>' + weightedAvg.toFixed(2) + '%</b></p>' +
-    '<p style="font-size:16px;color:#334155;margin-bottom:14px;">Letter Grade: <b>' + gradeInfo.letter + '</b> &nbsp;&bull;&nbsp; GPA Equivalent: <b>' + gradeInfo.gpa + '</b></p>' +
+    '<p style="font-size:16px;color:var(--text-secondary);margin-bottom:14px;">Letter Grade: <b>' + gradeInfo.letter + '</b> &nbsp;&bull;&nbsp; GPA Equivalent: <b>' + gradeInfo.gpa + '</b></p>' +
     '<table class="cinfoT" width="100%">' +
     '<tr><td class="cinfoHd">Assignment</td><td class="cinfoHdL" align="center">Grade</td><td class="cinfoHdL" align="center">Weight</td><td class="cinfoHdL" align="right">Points</td></tr>' +
     rowsHtml +
-    '<tr style="background:#f1f5f9;font-weight:700;"><td>Total Evaluated</td><td align="center">-</td><td align="center">' + totalWeight + '%</td><td align="right">' + (totalPoints / 100).toFixed(2) + '</td></tr>' +
+    '<tr style="background:var(--bg-card-subtle);font-weight:700;"><td>Total Evaluated</td><td align="center">-</td><td align="center">' + totalWeight + '%</td><td align="right">' + (totalPoints / 100).toFixed(2) + '</td></tr>' +
     '</table>' +
     planHtml +
     '</div>';
@@ -2057,9 +2057,9 @@ engines['grade-calculator'] = function () {
     var c = getResultContainer();
     if (!c) return;
     c.innerHTML = `
-      <div class="result-card modern-card" style="margin-bottom:20px;padding:20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
-        <h2 class="h2result" style="color:#166534;margin:0 0 10px 0;font-size:24px;">Result: ${years} years, ${months} months, ${days} days</h2>
-        <p style="font-size:16px;line-height:1.8;color:#334155;margin:0;">
+      <div class="result-card modern-card" style="margin-bottom:20px;padding:20px;background:var(--color-success-bg);border:1px solid var(--color-success-border);border-radius:12px;">
+        <h2 class="h2result" style="color:var(--color-success);margin:0 0 10px 0;font-size:24px;">Result: ${years} years, ${months} months, ${days} days</h2>
+        <p style="font-size:16px;line-height:1.8;color:var(--text-secondary);margin:0;">
           or <b>${totalMonths}</b> months ${days} days<br>
           or <b>${totalWeeks.toLocaleString()}</b> weeks ${daysRem} days<br>
           or <b>${totalDays.toLocaleString()}</b> days<br>

@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import Script from "next/script";
 import Navbar from "@/components/Navbar";
 import CommandPalette from "@/components/CommandPalette";
 import HistoryFavoritesModal from "@/components/HistoryFavoritesModal";
+import BrandLogo from "@/components/BrandLogo";
 import { ShieldCheckIcon, BoltIcon, DeviceMobileIcon } from "@/components/Icons";
 import "./globals.css";
 
@@ -38,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" data-theme="dark" suppressHydrationWarning>
       <head>
         {/* Anti-FOUC Theme Script: runs synchronously before body render */}
         <script
@@ -47,13 +47,15 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('allinone_theme');
-                  var isDark = theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                  if (isDark) {
-                    document.documentElement.classList.add('dark');
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                  } else {
+                  var isLight = theme === 'light';
+                  if (isLight) {
                     document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.add('light');
                     document.documentElement.setAttribute('data-theme', 'light');
+                  } else {
+                    document.documentElement.classList.add('dark');
+                    document.documentElement.classList.remove('light');
+                    document.documentElement.setAttribute('data-theme', 'dark');
                   }
                 } catch(e) {}
               })();
@@ -76,13 +78,8 @@ export default function RootLayout({
             <div className="footer-grid">
               {/* Brand & Mission */}
               <div className="footer-col brand-col">
-                <Link href="/" className="footer-logo">
-                  <Image
-                    src="/img/svg/allinone-logo.svg"
-                    width={220}
-                    height={32}
-                    alt="All-in-one-calculator"
-                  />
+                <Link href="/" className="footer-logo" aria-label="All-in-one-calculator">
+                  <BrandLogo height={32} />
                 </Link>
                 <p className="footer-tagline">
                   Free, instant, and privacy-first calculation tools built for everyone. No logins, no tracking, and 100% accurate.

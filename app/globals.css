@@ -15,8 +15,10 @@ body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* Modern date input group layout */
@@ -31,18 +33,18 @@ body {
 .modern-date-input-wrap input {
   padding: 7px 10px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-card-subtle);
   font-size: 14px;
-  color: #0f172a;
+  color: var(--text-primary);
   outline: none;
   transition: all 0.15s ease;
 }
 
 .modern-date-input-wrap select:focus,
 .modern-date-input-wrap input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 /* Responsive iframe and media embeds */
@@ -57,10 +59,10 @@ table.cinfoT::-webkit-scrollbar {
 }
 .cinfo::-webkit-scrollbar-thumb,
 table.cinfoT::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--border-subtle);
   border-radius: 4px;
 }
 .cinfo::-webkit-scrollbar-track,
 table.cinfoT::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--bg-card);
 }
