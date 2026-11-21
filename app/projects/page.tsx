@@ -3,42 +3,47 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 export const metadata = {
-  title: "Mobile Apps and Plugins - All In One Calculator",
-  description: "Calculator related mobile apps, plugins for WordPress, and desktop applications.",
+  title: "Mobile Apps and Plugins - All-in-one-calculator",
+  description: "Calculator related mobile apps, plugins for WordPress, and desktop applications on All-in-one-calculator.",
 };
-
-const contentHtml = `<div class="smalltext"><a href="/">Home</a> / <a href="/projects/">plugins</a></div>
-
-<h2>Wordpress Plugins</h2>
-<p>We have the following wordpress plugins available. All of these are free under the <a href="/https://www.gnu.org/licenses/gpl-3.0">GNU GPL license</a>.</p>
-<ul>
-<li><a href="/bmi-calculator-widget.php">BMI Calculator</a></li>
-<li><a href="/love-calculator-widget.php">Love Calculator</a></li>
-<li><a href="/math-calculator-widget.php">Math Calculator</a></li>
-<li><a href="/mortgage-calculator-widget.php">Mortgage Loan Calculator</a></li>
-</ul>`;
 
 export default function Page() {
   return (
-    <>
-      <div id="clear"></div>
-      <div id="contentout">
-        <div id="content">
-          <div id="breadcrumbs">
-            <Link href="/">home</Link> / <span>plugins</span>
+    <main className="calc-page-wrapper">
+      <div className="calc-page-container">
+        <article className="calc-main-content">
+          <nav className="modern-breadcrumbs">
+            <Link href="/">Home</Link>
+            <span className="crumb-sep">/</span>
+            <span className="crumb-current">Plugins &amp; Apps</span>
+          </nav>
+
+          <header className="hub-header">
+            <div className="hub-badge">🔌 Integrations</div>
+            <h1 className="hub-title">Mobile Apps &amp; Plugins</h1>
+            <p className="hub-subtitle">
+              Embed All-in-one-calculator tools directly onto your website or blog.
+            </p>
+          </header>
+
+          <div className="modern-article-card">
+            <h2>Embeddable Calculator Widgets</h2>
+            <p>
+              Free calculation widgets available under the GNU GPL license:
+            </p>
+            <ul>
+              <li><Link href="/bmi-calculator">BMI Calculator Widget</Link></li>
+              <li><Link href="/love-calculator">Love Calculator Widget</Link></li>
+              <li><Link href="/math-calculator">Math Calculator Widget</Link></li>
+              <li><Link href="/mortgage-calculator">Mortgage Loan Calculator Widget</Link></li>
+            </ul>
           </div>
-          <h1>Mobile Apps and Plugins</h1>
-          <div dangerouslySetInnerHTML={{ __html: contentHtml }} />
-        </div>
-        <Sidebar category="other" categoryTitle="Other Calculators" />
+        </article>
+
+        <aside className="calc-sidebar-aside">
+          <Sidebar category="other" categoryTitle="Other Calculators" />
+        </aside>
       </div>
-      <div id="clear"></div>
-      <div className="topNavAbs">
-        <Link href="/financial-calculator" className="">Financial</Link>
-        <Link href="/fitness-and-health-calculator" className="">Fitness &amp; Health</Link>
-        <Link href="/math-calculator" className="">Math</Link>
-        <Link href="/other-calculator" className="topNavOn">Other</Link>
-      </div>
-    </>
+    </main>
   );
 }

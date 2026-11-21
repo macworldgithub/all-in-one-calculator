@@ -21,13 +21,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!calc) {
     return {
-      title: "Page Not Found - All In One Calculator",
+      title: "Page Not Found - All-in-one-calculator",
     };
   }
 
   return {
-    title: `${calc.title} - All In One Calculator`,
-    description: calc.description || `${calc.title} on All In One Calculator`,
+    title: `${calc.title} - All-in-one-calculator`,
+    description: calc.description || `${calc.title} on All-in-one-calculator`,
   };
 }
 
@@ -40,16 +40,20 @@ export default async function CalculatorPage({ params }: PageProps) {
   }
 
   return (
-    <>
-      <div id="clear"></div>
-      <div id="contentout">
-        <div
-          id="content"
-          dangerouslySetInnerHTML={{ __html: calc.html }}
-        />
-        <Sidebar category={calc.category} categoryTitle={calc.categoryTitle} />
+    <main className="calc-page-wrapper">
+      <div className="calc-page-container">
+        <article className="calc-main-content">
+          <div
+            id="content"
+            className="calc-body-html"
+            dangerouslySetInnerHTML={{ __html: calc.html }}
+          />
+        </article>
+
+        <aside className="calc-sidebar-aside">
+          <Sidebar category={calc.category} categoryTitle={calc.categoryTitle} />
+        </aside>
       </div>
-      <div id="clear"></div>
-    </>
+    </main>
   );
 }

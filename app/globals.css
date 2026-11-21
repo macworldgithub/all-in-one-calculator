@@ -1,6 +1,9 @@
 /* ==========================================================================
-   ALL IN ONE CALCULATOR - GLOBAL MODERN ENHANCEMENTS
+   ALL-IN-ONE-CALCULATOR - GLOBAL MODERN ENHANCEMENTS
    ========================================================================== */
+
+@import "../public/style.css";
+@import "../public/css/sci.css";
 
 /* Modern smooth scrolling & antialiasing */
 html {

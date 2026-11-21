@@ -9,7 +9,7 @@ export default function ScientificCalculator() {
   const [memory, setMemory] = useState<number>(0);
   const [ans, setAns] = useState<number>(0);
   const [history, setHistory] = useState<string[]>([]);
-  const [showFx, setShowFx] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<"standard" | "scientific">("scientific");
 
   // Evaluate mathematical expression safely and accurately
   const calcEval = useCallback(
@@ -100,100 +100,125 @@ export default function ScientificCalculator() {
         if (isNaN(res)) {
           setDisplay("Error");
         } else {
-          const rounded = Number(res.toFixed(10));
-          const resStr = rounded.toString();
+          // Format result cleanly
+          const rounded =
+            Math.abs(res) < 1e-12 && Math.abs(res) > 0
+              ? 0
+              : parseFloat(res.toPrecision(12));
+          const resStr = String(rounded);
           setDisplay(resStr);
           setAns(rounded);
           setHistory((prev) => [`${expr} = ${resStr}`, ...prev.slice(0, 4)]);
           setExpr(resStr);
         }
-      } else if (c === "ans") {
-        setExpr((prev) => prev + ans);
-        setDisplay(String(ans));
-      } else if (c === "M+") {
-        const val = parseFloat(display) || 0;
-        setMemory((m) => m + val);
-      } else if (c === "M-") {
-        const val = parseFloat(display) || 0;
-        setMemory((m) => m - val);
-      } else if (c === "MR") {
-        setExpr((prev) => prev + memory);
-        setDisplay(String(memory));
-      } else if (c === "MC") {
-        setMemory(0);
-      } else if (c === "+/-") {
-        if (display && display !== "0") {
-          const toggled = display.startsWith("-")
-            ? display.slice(1)
-            : "-" + display;
-          setDisplay(toggled);
-          setExpr((prev) => {
-            if (!prev) return toggled;
-            return prev.replace(new RegExp(`${display}$`), toggled);
-          });
-        }
-      } else if (c === "RND") {
-        const rnd = Number(Math.random().toFixed(4));
-        setExpr((prev) => prev + rnd);
-        setDisplay(String(rnd));
-      } else if (c === "pi") {
-        setExpr((prev) => prev + "π");
-        setDisplay("3.14159265");
-      } else if (c === "e") {
-        setExpr((prev) => prev + "e");
-        setDisplay("2.71828182");
-      } else if (
-        ["sin", "cos", "tan", "asin", "acos", "atan", "ln", "log", "sqrt"].includes(
-          c
-        )
-      ) {
-        setExpr((prev) => prev + `${c}(`);
-        setDisplay(`${c}(`);
-      } else if (c === "1/x") {
-        setExpr((prev) => `1/(${prev || display || "1"})`);
-      } else if (c === "x2") {
-        setExpr((prev) => `(${prev || display || "0"})^2`);
-      } else if (c === "x3") {
-        setExpr((prev) => `(${prev || display || "0"})^3`);
-      } else if (c === "pow") {
-        setExpr((prev) => prev + "^");
-      } else if (c === "ex") {
-        setExpr((prev) => prev + "e^");
-      } else if (c === "10x") {
-        setExpr((prev) => prev + "10^");
+      } else if (c === "sin") {
+        setExpr((prev) => prev + "sin(");
+        setDisplay((prev) => (prev === "0" ? "sin(" : prev + "sin("));
+      } else if (c === "cos") {
+        setExpr((prev) => prev + "cos(");
+        setDisplay((prev) => (prev === "0" ? "cos(" : prev + "cos("));
+      } else if (c === "tan") {
+        setExpr((prev) => prev + "tan(");
+        setDisplay((prev) => (prev === "0" ? "tan(" : prev + "tan("));
+      } else if (c === "asin") {
+        setExpr((prev) => prev + "asin(");
+        setDisplay((prev) => (prev === "0" ? "asin(" : prev + "asin("));
+      } else if (c === "acos") {
+        setExpr((prev) => prev + "acos(");
+        setDisplay((prev) => (prev === "0" ? "acos(" : prev + "acos("));
+      } else if (c === "atan") {
+        setExpr((prev) => prev + "atan(");
+        setDisplay((prev) => (prev === "0" ? "atan(" : prev + "atan("));
+      } else if (c === "log") {
+        setExpr((prev) => prev + "log(");
+        setDisplay((prev) => (prev === "0" ? "log(" : prev + "log("));
+      } else if (c === "ln") {
+        setExpr((prev) => prev + "ln(");
+        setDisplay((prev) => (prev === "0" ? "ln(" : prev + "ln("));
+      } else if (c === "sqrt") {
+        setExpr((prev) => prev + "sqrt(");
+        setDisplay((prev) => (prev === "0" ? "sqrt(" : prev + "sqrt("));
       } else if (c === "3x") {
         setExpr((prev) => prev + "cbrt(");
+        setDisplay((prev) => (prev === "0" ? "cbrt(" : prev + "cbrt("));
+      } else if (c === "x2") {
+        setExpr((prev) => prev + "^2");
+        setDisplay((prev) => prev + "^2");
+      } else if (c === "x3") {
+        setExpr((prev) => prev + "^3");
+        setDisplay((prev) => prev + "^3");
+      } else if (c === "pow") {
+        setExpr((prev) => prev + "^");
+        setDisplay((prev) => prev + "^");
+      } else if (c === "ex") {
+        setExpr((prev) => prev + "e^(");
+        setDisplay((prev) => prev + "e^(");
+      } else if (c === "10x") {
+        setExpr((prev) => prev + "10^(");
+        setDisplay((prev) => prev + "10^(");
+      } else if (c === "1/x") {
+        setExpr((prev) => prev + "^(-1)");
+        setDisplay((prev) => prev + "^(-1)");
+      } else if (c === "pi") {
+        setExpr((prev) => prev + "π");
+        setDisplay((prev) => (prev === "0" ? "π" : prev + "π"));
+      } else if (c === "e") {
+        setExpr((prev) => prev + "e");
+        setDisplay((prev) => (prev === "0" ? "e" : prev + "e"));
       } else if (c === "n!") {
         setExpr((prev) => prev + "!");
-      } else if (c === "pc") {
-        setExpr((prev) => prev + "/100");
-      } else if (c === "EXP") {
-        setExpr((prev) => prev + "e+");
-      } else if (c === "*" || c === "×") {
-        setExpr((prev) => prev + "×");
-      } else if (c === "/" || c === "÷") {
-        setExpr((prev) => prev + "÷");
-      } else if (c === "-" || c === "–") {
-        setExpr((prev) => prev + "–");
-      } else if (c === "+") {
-        setExpr((prev) => prev + "+");
-      } else {
-        // Normal digit or decimal
+        setDisplay((prev) => prev + "!");
+      } else if (c === "+/-") {
         setExpr((prev) => {
-          const next = prev + c;
-          setDisplay(next);
-          return next;
+          if (!prev) return "-";
+          if (prev.startsWith("-")) return prev.slice(1);
+          return "-" + prev;
         });
+        setDisplay((prev) => {
+          if (!prev || prev === "0") return "-";
+          if (prev.startsWith("-")) return prev.slice(1);
+          return "-" + prev;
+        });
+      } else if (c === "pc") {
+        setExpr((prev) => prev + "*0.01");
+        setDisplay((prev) => prev + "%");
+      } else if (c === "ans") {
+        setExpr((prev) => prev + String(ans));
+        setDisplay((prev) => (prev === "0" ? String(ans) : prev + String(ans)));
+      } else if (c === "M+") {
+        const cur = calcEval(expr || display);
+        if (!isNaN(cur)) setMemory((prev) => prev + cur);
+      } else if (c === "M-") {
+        const cur = calcEval(expr || display);
+        if (!isNaN(cur)) setMemory((prev) => prev - cur);
+      } else if (c === "MR") {
+        setExpr((prev) => prev + String(memory));
+        setDisplay((prev) => (prev === "0" ? String(memory) : prev + String(memory)));
+      } else if (c === "MC") {
+        setMemory(0);
+      } else if (c === "RND") {
+        const r = parseFloat(Math.random().toFixed(4));
+        setExpr((prev) => prev + String(r));
+        setDisplay((prev) => (prev === "0" ? String(r) : prev + String(r)));
+      } else if (c === "EXP") {
+        setExpr((prev) => prev + "*10^");
+        setDisplay((prev) => prev + "E");
+      } else {
+        // Digits & Operators
+        setExpr((prev) => prev + c);
+        setDisplay((prev) => (prev === "0" && !["+", "–", "×", "÷", "."].includes(c) ? c : prev + c));
       }
     },
-    [display, expr, memory, ans, calcEval]
+    [expr, display, ans, memory, calcEval]
   );
 
-  // Expose global r() for legacy onclick compatibility and physical keyboard
+  // Hook into global window.r for legacy page clicks
   useEffect(() => {
-    (window as unknown as { r: (val: string | number) => void }).r = (val) =>
-      handleCommand(val);
+    (window as unknown as { r: (c: string | number) => void }).r = handleCommand;
+  }, [handleCommand]);
 
+  // Physical Keyboard Support
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (
         document.activeElement &&
@@ -221,155 +246,60 @@ export default function ScientificCalculator() {
   }, [handleCommand]);
 
   return (
-    <div
-      className="modern-calc-card"
-      style={{
-        background: "#ffffff",
-        borderRadius: "16px",
-        border: "1px solid #e2e8f0",
-        boxShadow: "0 4px 20px -2px rgba(15, 23, 42, 0.08)",
-        padding: "16px",
-        maxWidth: "460px",
-        margin: "0 auto",
-      }}
-    >
-      {/* Top Bar: Deg/Rad Switcher + Toggle Scientific Keys */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "10px",
-        }}
-      >
-        <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", padding: "3px", borderRadius: "8px" }}>
+    <div className="modern-calc-card">
+      {/* Top Header: Deg/Rad Switcher + Mode Toggle */}
+      <div className="calc-top-bar">
+        <div className="calc-mode-group">
           <button
             type="button"
             onClick={() => setAngleMode("deg")}
-            style={{
-              padding: "4px 10px",
-              fontSize: "12px",
-              fontWeight: 600,
-              borderRadius: "6px",
-              border: "none",
-              cursor: "pointer",
-              background: angleMode === "deg" ? "#ffffff" : "transparent",
-              color: angleMode === "deg" ? "#2563eb" : "#64748b",
-              boxShadow: angleMode === "deg" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
-            }}
+            className={`calc-mode-btn ${angleMode === "deg" ? "active" : ""}`}
           >
             DEG
           </button>
           <button
             type="button"
             onClick={() => setAngleMode("rad")}
-            style={{
-              padding: "4px 10px",
-              fontSize: "12px",
-              fontWeight: 600,
-              borderRadius: "6px",
-              border: "none",
-              cursor: "pointer",
-              background: angleMode === "rad" ? "#ffffff" : "transparent",
-              color: angleMode === "rad" ? "#2563eb" : "#64748b",
-              boxShadow: angleMode === "rad" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
-            }}
+            className={`calc-mode-btn ${angleMode === "rad" ? "active" : ""}`}
           >
             RAD
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          {memory !== 0 && (
-            <span
-              style={{
-                fontSize: "11px",
-                fontWeight: 700,
-                color: "#2563eb",
-                background: "#dbeafe",
-                padding: "2px 6px",
-                borderRadius: "4px",
-              }}
-            >
-              M={memory}
-            </span>
-          )}
+        <div className="calc-tab-group">
+          {memory !== 0 && <span className="calc-mem-indicator">M={memory}</span>}
           <button
             type="button"
-            onClick={() => setShowFx(!showFx)}
-            className="md-toggle-btn"
-            style={{
-              fontSize: "12px",
-              fontWeight: 600,
-              color: showFx ? "#2563eb" : "#64748b",
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              cursor: "pointer",
-            }}
+            onClick={() => setActiveTab("standard")}
+            className={`calc-tab-btn ${activeTab === "standard" ? "active" : ""}`}
           >
-            {showFx ? "Simple" : "Scientific (fx)"}
+            Standard
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("scientific")}
+            className={`calc-tab-btn ${activeTab === "scientific" ? "active" : ""}`}
+          >
+            Scientific
           </button>
         </div>
       </div>
 
-      {/* Screen Display */}
-      <div
-        id="sciout"
-        style={{
-          background: "#0f172a",
-          borderRadius: "12px",
-          padding: "12px 16px",
-          color: "#ffffff",
-          textAlign: "right",
-          marginBottom: "14px",
-          boxShadow: "inset 0 2px 4px rgba(0, 0, 0, 0.4)",
-        }}
-      >
-        <div
-          id="sciInPut"
-          style={{
-            minHeight: "18px",
-            fontSize: "13px",
-            color: "#94a3b8",
-            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-            overflowX: "auto",
-            whiteSpace: "nowrap",
-          }}
-        >
+      {/* OLED Screen Display */}
+      <div className="calc-display-screen" id="sciout">
+        <div className="calc-expression-preview" id="sciInPut">
           {expr || "\u00A0"}
         </div>
-        <div
-          id="sciOutPut"
-          style={{
-            fontSize: "28px",
-            fontWeight: 700,
-            color: "#38bdf8",
-            fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-            overflowX: "auto",
-            whiteSpace: "nowrap",
-            lineHeight: 1.2,
-            marginTop: "2px",
-          }}
-        >
+        <div className="calc-main-output" id="sciOutPut">
           {display}
         </div>
       </div>
 
-      {/* Buttons Grid */}
-      <div style={{ display: "flex", gap: "8px" }}>
-        {/* Function Keys (Expandable / Responsive) */}
-        {showFx && (
-          <div
-            id="homefunbtn"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(5, 1fr)",
-              gap: "5px",
-              flex: 1,
-            }}
-          >
+      {/* Buttons Keypad */}
+      <div className={`calc-keypad-wrapper ${activeTab}`}>
+        {/* Function Keys Grid */}
+        {activeTab === "scientific" && (
+          <div className="calc-fx-grid" id="homefunbtn">
             {[
               { label: "sin", cmd: "sin" },
               { label: "cos", cmd: "cos" },
@@ -400,19 +330,8 @@ export default function ScientificCalculator() {
               <button
                 key={i}
                 type="button"
-                className="scifunc modern-key-fx"
+                className="calc-btn btn-fx"
                 onClick={() => handleCommand(btn.cmd)}
-                style={{
-                  height: "36px",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  background: "#f1f5f9",
-                  color: "#334155",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  transition: "all 0.1s ease",
-                }}
               >
                 {btn.label}
               </button>
@@ -420,70 +339,51 @@ export default function ScientificCalculator() {
           </div>
         )}
 
-        {/* Numeric & Operator Keypad */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            gap: "5px",
-            flex: showFx ? 1 : 1.2,
-          }}
-        >
+        {/* Numeric & Operator Keypad Grid */}
+        <div className="calc-num-grid">
           {/* Row 1 */}
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("7")} style={keyNumStyle}>7</button>
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("8")} style={keyNumStyle}>8</button>
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("9")} style={keyNumStyle}>9</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("+")} style={keyOpStyle}>+</button>
-          <button type="button" className="sciop modern-key-del" onClick={() => handleCommand("bk")} style={keyDelStyle}>⌫</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("7")}>7</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("8")}>8</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("9")}>9</button>
+          <button type="button" className="calc-btn btn-op" onClick={() => handleCommand("+")}>+</button>
+          <button type="button" className="calc-btn btn-del" onClick={() => handleCommand("bk")}>⌫</button>
 
           {/* Row 2 */}
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("4")} style={keyNumStyle}>4</button>
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("5")} style={keyNumStyle}>5</button>
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("6")} style={keyNumStyle}>6</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("–")} style={keyOpStyle}>−</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("ans")} style={keyMemStyle}>Ans</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("4")}>4</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("5")}>5</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("6")}>6</button>
+          <button type="button" className="calc-btn btn-op" onClick={() => handleCommand("–")}>−</button>
+          <button type="button" className="calc-btn btn-mem" onClick={() => handleCommand("ans")}>Ans</button>
 
           {/* Row 3 */}
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("1")} style={keyNumStyle}>1</button>
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("2")} style={keyNumStyle}>2</button>
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("3")} style={keyNumStyle}>3</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("×")} style={keyOpStyle}>×</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("M+")} style={keyMemStyle}>M+</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("1")}>1</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("2")}>2</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("3")}>3</button>
+          <button type="button" className="calc-btn btn-op" onClick={() => handleCommand("×")}>×</button>
+          <button type="button" className="calc-btn btn-mem" onClick={() => handleCommand("M+")}>M+</button>
 
           {/* Row 4 */}
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand("0")} style={keyNumStyle}>0</button>
-          <button type="button" className="scinm modern-key-num" onClick={() => handleCommand(".")} style={keyNumStyle}>.</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("÷")} style={keyOpStyle}>÷</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("M-")} style={keyMemStyle}>M−</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("MR")} style={keyMemStyle}>MR</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand("0")}>0</button>
+          <button type="button" className="calc-btn btn-num" onClick={() => handleCommand(".")}>.</button>
+          <button type="button" className="calc-btn btn-op" onClick={() => handleCommand("÷")}>÷</button>
+          <button type="button" className="calc-btn btn-mem" onClick={() => handleCommand("M-")}>M−</button>
+          <button type="button" className="calc-btn btn-mem" onClick={() => handleCommand("MR")}>MR</button>
 
           {/* Row 5 */}
-          <button type="button" className="scieq modern-key-clear" onClick={() => handleCommand("AC")} style={keyClearStyle}>AC</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("(")} style={keyOpStyle}>(</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand(")")} style={keyOpStyle}>)</button>
-          <button type="button" className="scieq modern-key-equal" onClick={() => handleCommand("=")} style={keyEqualStyle}>=</button>
-          <button type="button" className="sciop modern-key-op" onClick={() => handleCommand("MC")} style={keyMemStyle}>MC</button>
+          <button type="button" className="calc-btn btn-clear" onClick={() => handleCommand("AC")}>AC</button>
+          <button type="button" className="calc-btn btn-op" onClick={() => handleCommand("(")}>(</button>
+          <button type="button" className="calc-btn btn-op" onClick={() => handleCommand(")")}>)</button>
+          <button type="button" className="calc-btn btn-equal" onClick={() => handleCommand("=")}>=</button>
+          <button type="button" className="calc-btn btn-mem" onClick={() => handleCommand("MC")}>MC</button>
         </div>
       </div>
 
-      {/* History panel */}
+      {/* History log */}
       {history.length > 0 && (
-        <div
-          id="scihistory"
-          style={{
-            marginTop: "12px",
-            padding: "8px 12px",
-            background: "#f8fafc",
-            borderRadius: "8px",
-            border: "1px solid #e2e8f0",
-            fontSize: "12px",
-            color: "#64748b",
-            fontFamily: "monospace",
-          }}
-        >
-          <div style={{ fontWeight: 600, color: "#475569", marginBottom: "4px" }}>Recent Calculations:</div>
+        <div className="calc-history-drawer">
+          <div className="history-header">Recent Calculations</div>
           {history.map((h, i) => (
-            <div key={i} style={{ padding: "2px 0" }}>
+            <div key={i} className="history-row">
               {h}
             </div>
           ))}
@@ -492,73 +392,3 @@ export default function ScientificCalculator() {
     </div>
   );
 }
-
-const keyNumStyle: React.CSSProperties = {
-  height: "36px",
-  fontSize: "16px",
-  fontWeight: 600,
-  background: "#ffffff",
-  color: "#0f172a",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  cursor: "pointer",
-  transition: "all 0.1s ease",
-  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
-};
-
-const keyOpStyle: React.CSSProperties = {
-  height: "36px",
-  fontSize: "16px",
-  fontWeight: 700,
-  background: "#eff6ff",
-  color: "#2563eb",
-  border: "1px solid #bfdbfe",
-  borderRadius: "8px",
-  cursor: "pointer",
-  transition: "all 0.1s ease",
-};
-
-const keyEqualStyle: React.CSSProperties = {
-  height: "36px",
-  fontSize: "18px",
-  fontWeight: 700,
-  background: "#2563eb",
-  color: "#ffffff",
-  border: "none",
-  borderRadius: "8px",
-  cursor: "pointer",
-  boxShadow: "0 2px 4px rgba(37, 99, 235, 0.3)",
-};
-
-const keyClearStyle: React.CSSProperties = {
-  height: "36px",
-  fontSize: "13px",
-  fontWeight: 700,
-  background: "#fef2f2",
-  color: "#dc2626",
-  border: "1px solid #fecaca",
-  borderRadius: "8px",
-  cursor: "pointer",
-};
-
-const keyDelStyle: React.CSSProperties = {
-  height: "36px",
-  fontSize: "14px",
-  fontWeight: 700,
-  background: "#f8fafc",
-  color: "#64748b",
-  border: "1px solid #cbd5e1",
-  borderRadius: "8px",
-  cursor: "pointer",
-};
-
-const keyMemStyle: React.CSSProperties = {
-  height: "36px",
-  fontSize: "12px",
-  fontWeight: 600,
-  background: "#f1f5f9",
-  color: "#475569",
-  border: "1px solid #e2e8f0",
-  borderRadius: "8px",
-  cursor: "pointer",
-};
