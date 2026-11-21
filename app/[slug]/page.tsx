@@ -41,7 +41,7 @@ export default async function CalculatorPage({ params }: PageProps) {
     notFound();
   }
 
-  const isScientific = slug === "scientific-calculator";
+  const isInteractiveCalc = slug === "scientific-calculator" || slug === "basic-calculator";
 
   const getCatUrl = (category: string) => {
     if (category === "fitness-and-health") return "/fitness-and-health-calculator";
@@ -54,7 +54,7 @@ export default async function CalculatorPage({ params }: PageProps) {
     <main className="calc-page-wrapper">
       <div className="calc-page-container">
         <article className="calc-main-content">
-          {isScientific ? (
+          {isInteractiveCalc ? (
             <div>
               <nav className="modern-breadcrumbs">
                 <Link href="/">Home</Link>
@@ -68,12 +68,14 @@ export default async function CalculatorPage({ params }: PageProps) {
                 <div className="hub-badge">🔬 Precision Math</div>
                 <h1 className="hub-title">{calc.title}</h1>
                 <p className="hub-subtitle">
-                  High-precision online scientific calculator supporting standard arithmetic, trigonometry (Deg/Rad), logarithms, factorials, roots, powers, and full physical keyboard input.
+                  {slug === "basic-calculator"
+                    ? "Fast, responsive standard four-function calculator with memory recall, clear buttons, and full physical keyboard support."
+                    : "High-precision online scientific calculator supporting standard arithmetic, trigonometry (Deg/Rad), logarithms, factorials, roots, powers, and full physical keyboard input."}
                 </p>
               </header>
 
               <div style={{ maxWidth: "560px", margin: "0 auto 36px" }}>
-                <ScientificCalculator />
+                <ScientificCalculator defaultMode={slug === "basic-calculator" ? "standard" : "scientific"} />
               </div>
             </div>
           ) : (

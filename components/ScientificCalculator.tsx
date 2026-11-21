@@ -2,14 +2,18 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 
-export default function ScientificCalculator() {
+interface ScientificCalculatorProps {
+  defaultMode?: "standard" | "scientific";
+}
+
+export default function ScientificCalculator({ defaultMode = "scientific" }: ScientificCalculatorProps) {
   const [expr, setExpr] = useState<string>("");
   const [display, setDisplay] = useState<string>("0");
   const [angleMode, setAngleMode] = useState<"deg" | "rad">("deg");
   const [memory, setMemory] = useState<number>(0);
   const [ans, setAns] = useState<number>(0);
   const [history, setHistory] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"standard" | "scientific">("scientific");
+  const [activeTab, setActiveTab] = useState<"standard" | "scientific">(defaultMode);
 
   // Evaluate mathematical expression safely and accurately
   const calcEval = useCallback(
