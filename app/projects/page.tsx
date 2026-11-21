@@ -3,7 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 export const metadata = {
-  title: "Mobile Apps and Plugins - Calculator.net",
+  title: "Mobile Apps and Plugins - All In One Calculator",
   description: "Calculator related mobile apps, plugins for WordPress, and desktop applications.",
 };
 

@@ -3,7 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 export const metadata = {
-  title: "Financial Calculators - Calculator.net",
+  title: "Financial Calculators - All In One Calculator",
   description: "A compilation of free financial calculators involving mortgages, loans, investments, debt, retirement, and more.",
 };
 

@@ -1,146 +1,172 @@
-#calinfoout{background-color:#EEEEEE;width:258px;}
-.calinfoinner{padding:5px;border-top:1px solid #262626;border-left:1px solid #262626;border-right:2px outset #262626;border-bottom:2px outset #262626;}
-#calinfoout input{width:45px;height:30px;margin:2px;background-color:#FFF;font-family:arial,helvetica,sans-serif;font-size: 17px;border:1px solid #262626;}
-#calinfoout #calInfoOutPut{width:242px;font-size:22px;padding:3px;cursor:text;text-align: right;background-color:#B8C6A3;color:#000000;}
-#calinfoout .calinfonm{color:#FFF;font-weight:bold;background-color:#262626;}
-#calinfoout .calinfoop{color:#262626;font-weight:bold;background-color:#cccccc;}
-#calinfoout .calinfoeq{color:#FF0000;font-weight:bold;background-color:#DCADB0;}
-#calinfoout .calinfofunc{color:#185290;font-weight:bold;background-color:#C8D8E8;height:23px;padding-bottom:1px;}
+/* ==========================================================================
+   SCIENTIFIC CALCULATOR - MODERN MINIMALIST STYLES
+   ========================================================================== */
 
+#sciout {
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+  max-width: 480px;
+  margin: 0 auto;
+}
 
-#sciout{
-	padding:5px;
-	border-top:1px solid #262626;
-	border-left:1px solid #262626;
-	border-right:2px outset #262626;
-	border-bottom:2px outset #262626;
-	background: #fff;
+#sciInPut {
+  min-height: 20px;
+  font-size: 13px;
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  overflow-x: auto;
+  white-space: nowrap;
+  text-align: right;
+  padding: 4px 8px 0;
+  background: #0f172a;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
-#sciOutPut{
-	font-size:20px;
-	padding:3px;
-	margin:2px;
-	cursor:text;
-	text-align:right;
-	background-color:#336699;
-	border:1px solid #336699;
-	border-radius: 0px;
-	color:#fff;
+
+#sciOutPut {
+  font-size: 28px;
+  font-weight: 700;
+  color: #38bdf8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  overflow-x: auto;
+  white-space: nowrap;
+  text-align: right;
+  padding: 2px 8px 10px;
+  background: #0f172a;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  margin-bottom: 12px;
+  line-height: 1.2;
 }
-.scifunc{
-	display: inline-block;
-	display: table-cell;
-	vertical-align: middle;
-	text-align:center;
-	width:50px;
-	height:30px;
-	margin:1px;
-	border:1px solid #a2bbd4;
-	border-radius: 3px;
-	font-family:arial,helvetica,sans-serif;
-	font-size:16px;
-	font-weight:bold;
-	color:#000;
-	background-color:#e5ecf3;
+
+.scifunc,
+.scinm,
+.sciop,
+.scieq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  text-align: center;
+  min-width: 42px;
+  height: 36px;
+  margin: 2px;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.1s ease;
+  box-sizing: border-box;
+}
+
+/* Function Keys */
+.scifunc {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+.scifunc:hover {
+  background: #e2e8f0;
+  color: #0f172a;
 }
 .scifunc:active {
-	background-color:#000;
-	color:#ffffff;
-}
-.scinm{
-	display: inline-block;
-	display: table-cell;
-	vertical-align: middle;
-	padding: 0px;
-	text-align:center;
-	width:50px;
-	height:30px;
-	margin:1px;
-	border:1px solid #336699;
-	border-radius: 3px;
-	font-family:arial,helvetica,sans-serif;
-	font-size:16px;
-	font-weight:bold;
-	color:#000;
-	background-color:#aec0d3;
-}
-.scinm:active {
-	background-color:#aaaaaa;
-	color:#000000;
-}
-.sciop{
-	display: inline-block;
-	display: table-cell;
-	vertical-align: middle;
-	padding: 0px;
-	text-align:center;
-	width:50px;
-	height:30px;
-	margin:1px;
-	border:1px solid #a2bbd4;
-	border-radius: 3px;
-	font-family:arial,helvetica,sans-serif;
-	font-size:16px;
-	font-weight:bold;
-	color:#000;
-	background-color:#e5ecf3;
-}
-.sciop:active {
-	background-color:#000000;
-	color:#ffffff;
-}
-.scird{
-	display: inline-block;
-	display: table-cell;
-	vertical-align: middle;
-	text-align:center;
-	height:30px;
-	margin:1px;
-	border:1px solid #eeeeee;
-	border-radius: 3px;
-	font-family:arial,helvetica,sans-serif;
-	font-size:13px;
-	color:#262626;
-}
-.scieq{
-	display: inline-block;
-	display: table-cell;
-	vertical-align: middle;
-	padding: 0px;
-	text-align:center;
-	width:50px;
-	height:30px;
-	margin:1px;
-	border:1px solid #336699;
-	border-radius: 3px;
-	font-family:arial,helvetica,sans-serif;
-	font-size:16px;
-	font-weight:bold;
-	color:#000;
-	background-color:#aec0d3;
-}
-.scieq:active {
-	background-color:#ff0000;
-	color:#ffffff;
+  background: #cbd5e1;
+  transform: scale(0.97);
 }
 
-#scihistory, #scihistory div{
-	font-size:13px;
-	color:#888;
-	text-align:right;
-	overflow: hidden;
-	width:268px;
+/* Numeric Keys */
+.scinm {
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
-#sciInPut{
-	font-size:18px;
-	color:#000;
-	text-align:right;
-	overflow: hidden;
-	width:268px;
-	word-wrap: break-word;
-	margin-bottom:-2px;
+.scinm:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
-#sciInPut b{
-	color:#ccc;
-	font-weight:bold;
+.scinm:active {
+  background: #e2e8f0;
+  transform: scale(0.97);
+}
+
+/* Operator Keys */
+.sciop {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-weight: 700;
+}
+.sciop:hover {
+  background: #dbeafe;
+}
+.sciop:active {
+  background: #bfdbfe;
+  transform: scale(0.97);
+}
+
+/* Equals Key */
+.scieq {
+  background: #2563eb;
+  color: #ffffff;
+  border: 1px solid #1d4ed8;
+  font-weight: 700;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+}
+.scieq:hover {
+  background: #1d4ed8;
+}
+.scieq:active {
+  transform: scale(0.97);
+}
+
+/* Radian / Degree pill container */
+.scird {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  margin: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+.scird label {
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+#scihistory {
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #64748b;
+  font-family: monospace;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* Responsive scientific calculator */
+@media (max-width: 600px) {
+  #sciout {
+    padding: 12px;
+    width: 100%;
+  }
+  .scifunc, .scinm, .sciop, .scieq {
+    min-width: 32px;
+    height: 34px;
+    font-size: 13px;
+    margin: 1.5px;
+  }
 }

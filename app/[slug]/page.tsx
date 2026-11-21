@@ -1,5 +1,4 @@
 import React from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Sidebar from "@/components/Sidebar";
@@ -22,13 +21,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!calc) {
     return {
-      title: "Page Not Found - Calculator.net",
+      title: "Page Not Found - All In One Calculator",
     };
   }
 
   return {
-    title: `${calc.title} - Calculator.net`,
-    description: calc.description || `${calc.title} on Calculator.net`,
+    title: `${calc.title} - All In One Calculator`,
+    description: calc.description || `${calc.title} on All In One Calculator`,
   };
 }
 
@@ -51,33 +50,6 @@ export default async function CalculatorPage({ params }: PageProps) {
         <Sidebar category={calc.category} categoryTitle={calc.categoryTitle} />
       </div>
       <div id="clear"></div>
-
-      <div className="topNavAbs">
-        <Link
-          href="/financial-calculator"
-          className={calc.category === "financial" ? "topNavOn" : ""}
-        >
-          Financial
-        </Link>
-        <Link
-          href="/fitness-and-health-calculator"
-          className={calc.category === "fitness-and-health" ? "topNavOn" : ""}
-        >
-          Fitness &amp; Health
-        </Link>
-        <Link
-          href="/math-calculator"
-          className={calc.category === "math" ? "topNavOn" : ""}
-        >
-          Math
-        </Link>
-        <Link
-          href="/other-calculator"
-          className={calc.category === "other" ? "topNavOn" : ""}
-        >
-          Other
-        </Link>
-      </div>
     </>
   );
 }

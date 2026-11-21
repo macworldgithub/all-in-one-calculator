@@ -4,23 +4,27 @@ import Image from "next/image";
 
 export default function CategoryTiles() {
   return (
-    <div id="homelistdiv">
+    <div id="homelistdiv" style={{ padding: "30px 0 10px" }}>
       <div id="contentout">
         <div id="homelistwrap">
           {/* Financial Calculators */}
-          <div className="homelisttile">
-            <div className="hicon">
-              <Link href="/financial-calculator">
+          <div className="homelisttile modern-cat-card">
+            <div className="cat-header" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, boxShadow: "0 2px 4px rgba(0,0,0,0.06)" }}>
                 <Image
                   src="/img/financial-calculator.jpg"
-                  width={135}
-                  height={135}
+                  width={48}
+                  height={48}
                   alt="Financial Calculators"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
-              </Link>
-            </div>
-            <div className="hh">
-              <Link href="/financial-calculator">Financial Calculators</Link>
+              </div>
+              <div>
+                <h2 style={{ fontSize: "17px", fontWeight: 700, margin: 0 }}>
+                  <Link href="/financial-calculator" style={{ color: "#0f172a" }}>Financial</Link>
+                </h2>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>Loans, Taxes & Investments</span>
+              </div>
             </div>
             <ul className="hl" id="hl1">
               <li><Link href="/mortgage-calculator">Mortgage Calculator</Link></li>
@@ -39,22 +43,31 @@ export default function CategoryTiles() {
               <li><Link href="/interest-rate-calculator">Interest Rate Calculator</Link></li>
               <li><Link href="/sales-tax-calculator">Sales Tax Calculator</Link></li>
             </ul>
+            <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px solid #f1f5f9" }}>
+              <Link href="/financial-calculator" style={{ fontSize: "13px", fontWeight: 600, color: "#2563eb", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                All Financial Calculators &rarr;
+              </Link>
+            </div>
           </div>
 
           {/* Fitness & Health Calculators */}
-          <div className="homelisttile">
-            <div className="hicon">
-              <Link href="/fitness-and-health-calculator">
+          <div className="homelisttile modern-cat-card">
+            <div className="cat-header" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, boxShadow: "0 2px 4px rgba(0,0,0,0.06)" }}>
                 <Image
                   src="/img/fitness-calculator.jpg"
-                  width={135}
-                  height={135}
+                  width={48}
+                  height={48}
                   alt="Fitness & Health Calculators"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
-              </Link>
-            </div>
-            <div className="hh">
-              <Link href="/fitness-and-health-calculator">Fitness &amp; Health Calculators</Link>
+              </div>
+              <div>
+                <h2 style={{ fontSize: "17px", fontWeight: 700, margin: 0 }}>
+                  <Link href="/fitness-and-health-calculator" style={{ color: "#0f172a" }}>Fitness &amp; Health</Link>
+                </h2>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>BMI, Calorie & Body Fat</span>
+              </div>
             </div>
             <ul className="hl" id="hl2">
               <li><Link href="/bmi-calculator">BMI Calculator</Link></li>
@@ -67,22 +80,31 @@ export default function CategoryTiles() {
               <li><Link href="/pregnancy-conception-calculator">Pregnancy Conception Calculator</Link></li>
               <li><Link href="/due-date-calculator">Due Date Calculator</Link></li>
             </ul>
+            <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px solid #f1f5f9" }}>
+              <Link href="/fitness-and-health-calculator" style={{ fontSize: "13px", fontWeight: 600, color: "#2563eb", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                All Health Calculators &rarr;
+              </Link>
+            </div>
           </div>
 
           {/* Math Calculators */}
-          <div className="homelisttile">
-            <div className="hicon">
-              <Link href="/math-calculator">
+          <div className="homelisttile modern-cat-card">
+            <div className="cat-header" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, boxShadow: "0 2px 4px rgba(0,0,0,0.06)" }}>
                 <Image
                   src="/img/math-calculator.jpg"
-                  width={135}
-                  height={135}
+                  width={48}
+                  height={48}
                   alt="Math Calculators"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
-              </Link>
-            </div>
-            <div className="hh">
-              <Link href="/math-calculator">Math Calculators</Link>
+              </div>
+              <div>
+                <h2 style={{ fontSize: "17px", fontWeight: 700, margin: 0 }}>
+                  <Link href="/math-calculator" style={{ color: "#0f172a" }}>Math</Link>
+                </h2>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>Scientific, Fractions & Percent</span>
+              </div>
             </div>
             <ul className="hl" id="hl3">
               <li><Link href="/scientific-calculator">Scientific Calculator</Link></li>
@@ -92,22 +114,31 @@ export default function CategoryTiles() {
               <li><Link href="/triangle-calculator">Triangle Calculator</Link></li>
               <li><Link href="/standard-deviation-calculator">Standard Deviation Calculator</Link></li>
             </ul>
+            <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px solid #f1f5f9" }}>
+              <Link href="/math-calculator" style={{ fontSize: "13px", fontWeight: 600, color: "#2563eb", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                All Math Calculators &rarr;
+              </Link>
+            </div>
           </div>
 
           {/* Other Calculators */}
-          <div className="homelisttile">
-            <div className="hicon">
-              <Link href="/other-calculator">
+          <div className="homelisttile modern-cat-card">
+            <div className="cat-header" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
+              <div style={{ width: "48px", height: "48px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, boxShadow: "0 2px 4px rgba(0,0,0,0.06)" }}>
                 <Image
                   src="/img/other-calculator.jpg"
-                  width={135}
-                  height={135}
+                  width={48}
+                  height={48}
                   alt="Other Calculators"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
-              </Link>
-            </div>
-            <div className="hh">
-              <Link href="/other-calculator">Other Calculators</Link>
+              </div>
+              <div>
+                <h2 style={{ fontSize: "17px", fontWeight: 700, margin: 0 }}>
+                  <Link href="/other-calculator" style={{ color: "#0f172a" }}>Other</Link>
+                </h2>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>Age, Time, GPA & Concrete</span>
+              </div>
             </div>
             <ul className="hl" id="hl5">
               <li><Link href="/age-calculator">Age Calculator</Link></li>
@@ -121,21 +152,36 @@ export default function CategoryTiles() {
               <li><Link href="/password-generator">Password Generator</Link></li>
               <li><Link href="/conversion-calculator">Conversion Calculator</Link></li>
             </ul>
+            <div style={{ marginTop: "14px", paddingTop: "10px", borderTop: "1px solid #f1f5f9" }}>
+              <Link href="/other-calculator" style={{ fontSize: "13px", fontWeight: 600, color: "#2563eb", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                All Other Calculators &rarr;
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div style={{ textAlign: "center", paddingTop: "30px" }}>
-          <Link href="/sitemap">
-            <Image
-              src="/img/svg/all-calculators.svg"
-              width={248}
-              height={45}
-              alt="All Calculators"
-              style={{ display: "inline-block" }}
-            />
+        <div style={{ textAlign: "center", paddingTop: "32px", paddingBottom: "16px" }}>
+          <Link
+            href="/sitemap"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "12px 28px",
+              background: "#2563eb",
+              color: "#ffffff",
+              borderRadius: "10px",
+              fontWeight: 600,
+              fontSize: "15px",
+              textDecoration: "none",
+              boxShadow: "0 2px 6px rgba(37, 99, 235, 0.25)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <span>Browse All 200+ Calculators</span>
+            <span>&rarr;</span>
           </Link>
         </div>
-        <br />
       </div>
     </div>
   );

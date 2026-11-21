@@ -3,7 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 export const metadata = {
-  title: "Other Calculators - Calculator.net",
+  title: "Other Calculators - All In One Calculator",
   description: "A collection of useful calculators including age, date, time, GPA, grade, concrete, subnet, conversion, and tip calculators.",
 };
 

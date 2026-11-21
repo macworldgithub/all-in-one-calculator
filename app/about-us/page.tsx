@@ -3,28 +3,28 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 export const metadata = {
-  title: "About Us - Calculator.net",
-  description: "About Calculator.net, our team, contact information, terms of use, and privacy policy.",
+  title: "About Us - All In One Calculator",
+  description: "About All In One Calculator, our team, contact information, terms of use, and privacy policy.",
 };
 
-const contentHtml = `<p>We are a group of IT professionals enthusiastic in creating quality free tools and content on the Internet. The main purpose of this website is to provide a comprehensive collection of free online calculators for ease of public use. This site was launched on calculators.info first in 2007. In 2008, we migrated to calculator.net.</p>
+const contentHtml = `<p>We are a group of IT professionals enthusiastic in creating quality free tools and content on the Internet. The main purpose of this website is to provide a comprehensive collection of free online calculators for ease of public use. This site was launched on calculators.info first in 2007. In 2008, we migrated to all in one calculator.</p>
 <p>The calculators on this site were grouped into 4 sections: <a href="/financial-calculator">financial</a>, <a href="/fitness-and-health-calculator">fitness &amp; health</a>, <a href="/math-calculator">math</a>, and <a href="/other-calculator">others</a>. All of the calculators were developed in-house. Some calculators use open-source JavaScript components under different open-source licenses. More than 90% of the calculators are based on well-known formulas or equations from textbooks, such as the mortgage calculator, BMI calculator, etc. If formulas are controversial, we provide the results of all popular formulas, as can be seen in the Ideal Weight Calculator. Calculators such as the love calculator that are solely meant for amusement are based on internal formulas. The results of the financial calculators were reviewed by our financial advisors, who work for major personal financial advising firms. The results of the health calculators were reviewed and approved by local medical doctors. More than 99% of the descriptive content was developed in-house with a small amount of content taken from wikipedia.org under the GNU Free Documentation License. The descriptive content of the financial calculators was created and reviewed by our financial team. The descriptive content of the health calculators was reviewed by local medical doctors.</p>
 <p>This site is owned and operated by Maple Tech. International LLC.</p>
 <br/><h2>Frequently Asked Questions</h2>
-<p><b>Q: Can I link from my website to a calculator on calculator.net?</b><br/>
+<p><b>Q: Can I link from my website to a calculator on all in one calculator?</b><br/>
 
-A: Yes, please feel free to link to any page on calculator.net.</p>
+A: Yes, please feel free to link to any page on all in one calculator.</p>
 <p><b>Q: How should I send suggestions or report problems?</b><br/>
 
 A: We appreciate and welcome any suggestions and bug reporting. Please write to us via the form below. If it involves a calculator, please include the URL of the calculator and the parameters you used.</p>
 <p><b>Q: Do you have an API for the calculators?</b><br/>
 
 A: Sorry, we do not have an API available.</p>
-<p><b>Q: How can I advertise on calculator.net?</b><br/>
+<p><b>Q: How can I advertise on all in one calculator?</b><br/>
 
 A: Please use Google Ads placement targeting. Please do not try to reach us on advertisement optimization, header bidding, etc.</p>
 <a name="data-removal"></a>
-<p><b>Q: How do I delete my data from calculator.net?</b><br/>
+<p><b>Q: How do I delete my data from all in one calculator?</b><br/>
 
 A: For registered users, a button is available to delete your entire registration information, saved calculations, and settings after signing in. Alternatively, you can use the 'Contact Us' form below to request the removal of your registration and data. We will process the removal within two business days after verification.</p>
 <a name="contact"></a>
@@ -73,7 +73,7 @@ The Woodlands, TX 77380</p>
 <a name="privacy"></a>
 <br/><br/>
 <h2>Privacy Policy</h2>
-<p>Maple Tech International LLC operates the calculator.net website, which provides the SERVICE.</p>
+<p>Maple Tech International LLC operates the all in one calculator website, which provides the SERVICE.</p>
 <p>This page is used to inform website visitors regarding our policies with the collection, use, and disclosure of Personal Information if anyone decided to use our Service.</p>
 <p>If you choose to use our Service, then you agree to the collection and use of information in relation to this policy. The Personal Information that we collect is used for providing and improving the Service. We will not use or share your information with anyone except as described in this Privacy Policy.</p>
 <p><b>Information Collection and Use</b></p>
@@ -99,7 +99,7 @@ The Woodlands, TX 77380</p>
 <br/><br/>
 <h2>Terms of Use</h2>
 <p><b>Acceptance of Terms</b></p>
-<p>Maple Tech International LLC. ("Company") provides this website at calculator.net (referred to hereafter as "the Website") for use by consumers and businesses. By using the Website in any way, you are agreeing to comply with the Terms of Use. Should you object to any term or condition of the Terms of Use or any guideline of the Website, your only recourse is to immediately discontinue use of the Website.</p>
+<p>Maple Tech International LLC. ("Company") provides this website at all in one calculator (referred to hereafter as "the Website") for use by consumers and businesses. By using the Website in any way, you are agreeing to comply with the Terms of Use. Should you object to any term or condition of the Terms of Use or any guideline of the Website, your only recourse is to immediately discontinue use of the Website.</p>
 <p><b>Changes to the Terms of Use</b></p>
 <p>We reserve the right, at our sole discretion, to change, modify, or alter the Terms of Use at any time. Such changes shall become effective immediately upon the posting thereof. The most current version of the Terms of Use will be linked from the footer of the Website. You must review the Terms of Use on a regular basis to keep yourself apprised of any changes.</p>
 <p><b>Conduct</b></p>

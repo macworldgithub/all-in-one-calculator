@@ -3,7 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 export const metadata = {
-  title: "Fitness and Health Calculators - Calculator.net",
+  title: "Fitness and Health Calculators - All In One Calculator",
   description: "A list of fitness and health related calculators including BMI, calorie, body fat, BMR, pace, pregnancy, and more.",
 };
 

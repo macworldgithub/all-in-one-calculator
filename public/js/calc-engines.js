@@ -1,7 +1,7 @@
 /**
- * Calculator.net Universal Client-Side Calculation Suite
+ * All In One Calculator Universal Client-Side Calculation Suite
  * Powers all 217 calculators locally with 100% precision, zero network latency,
- * and authentic Calculator.net result formatting.
+ * and authentic All In One Calculator result formatting.
  */
 
 (function () {
@@ -103,9 +103,139 @@
       var tooltip = document.getElementById('ttvsbartt');
       if (tooltip) tooltip.style.display = 'none';
     };
+
+    // Global Scientific Calculator command handler for onclick="r('...')"
+    var sciExpr = '';
+    var sciDisplay = '0';
+    var sciMemory = 0;
+    var sciAns = 0;
+    window.cnDegreeRadians = 'degree';
+
+    window.r = function (cmd) {
+      var inEl = document.getElementById('sciInPut');
+      var outEl = document.getElementById('sciOutPut');
+      var c = String(cmd);
+
+      if (c === 'C' || c === 'AC') {
+        sciExpr = '';
+        sciDisplay = '0';
+      } else if (c === 'bk') {
+        sciExpr = sciExpr.slice(0, -1);
+        sciDisplay = sciExpr || '0';
+      } else if (c === '=') {
+        if (!sciExpr) return;
+        try {
+          var clean = sciExpr
+            .replace(/×/g, '*')
+            .replace(/÷/g, '/')
+            .replace(/–/g, '-')
+            .replace(/π/g, 'Math.PI')
+            .replace(/\be\b/g, 'Math.E')
+            .replace(/\^/g, '**');
+
+          var isDeg = window.cnDegreeRadians !== 'radians';
+          clean = clean.replace(/sin\(([^)]+)\)/g, isDeg ? 'Math.sin(($1)*Math.PI/180)' : 'Math.sin($1)');
+          clean = clean.replace(/cos\(([^)]+)\)/g, isDeg ? 'Math.cos(($1)*Math.PI/180)' : 'Math.cos($1)');
+          clean = clean.replace(/tan\(([^)]+)\)/g, isDeg ? 'Math.tan(($1)*Math.PI/180)' : 'Math.tan($1)');
+          clean = clean.replace(/asin\(([^)]+)\)/g, isDeg ? '(Math.asin($1)*180/Math.PI)' : 'Math.asin($1)');
+          clean = clean.replace(/acos\(([^)]+)\)/g, isDeg ? '(Math.acos($1)*180/Math.PI)' : 'Math.acos($1)');
+          clean = clean.replace(/atan\(([^)]+)\)/g, isDeg ? '(Math.atan($1)*180/Math.PI)' : 'Math.atan($1)');
+          clean = clean.replace(/log\(([^)]+)\)/g, 'Math.log10($1)');
+          clean = clean.replace(/ln\(([^)]+)\)/g, 'Math.log($1)');
+          clean = clean.replace(/sqrt\(([^)]+)\)/g, 'Math.sqrt($1)');
+          clean = clean.replace(/3x\(([^)]+)\)/g, 'Math.cbrt($1)');
+
+          clean = clean.replace(/(\d+)!/g, function (_, n) {
+            var num = Math.min(parseInt(n, 10), 100), f = 1;
+            for (var i = 2; i <= num; i++) f *= i;
+            return String(f);
+          });
+
+          var res = Function('"use strict"; return (' + clean + ')')();
+          if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
+            var rounded = Number(res.toFixed(10));
+            sciDisplay = String(rounded);
+            sciAns = rounded;
+            var hist = document.getElementById('scihistory');
+            if (hist) {
+              hist.innerHTML = '<div style="padding:2px 0;">' + sciExpr + ' = ' + sciDisplay + '</div>' + hist.innerHTML;
+            }
+            sciExpr = sciDisplay;
+          } else {
+            sciDisplay = 'Error';
+          }
+        } catch (e) {
+          sciDisplay = 'Error';
+        }
+      } else if (c === 'ans') {
+        sciExpr += sciAns;
+        sciDisplay = String(sciAns);
+      } else if (c === 'M+') {
+        sciMemory += parseFloat(sciDisplay) || 0;
+      } else if (c === 'M-') {
+        sciMemory -= parseFloat(sciDisplay) || 0;
+      } else if (c === 'MR') {
+        sciExpr += sciMemory;
+        sciDisplay = String(sciMemory);
+      } else if (c === 'MC') {
+        sciMemory = 0;
+      } else if (c === '+/-') {
+        if (sciDisplay && sciDisplay !== '0') {
+          sciDisplay = sciDisplay.startsWith('-') ? sciDisplay.slice(1) : '-' + sciDisplay;
+          sciExpr = sciDisplay;
+        }
+      } else if (c === 'RND') {
+        var rnd = Number(Math.random().toFixed(4));
+        sciExpr += rnd;
+        sciDisplay = String(rnd);
+      } else if (c === 'pi') {
+        sciExpr += 'π';
+        sciDisplay = '3.14159265';
+      } else if (c === 'e') {
+        sciExpr += 'e';
+        sciDisplay = '2.71828182';
+      } else if (['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'ln', 'log', 'sqrt'].indexOf(c) !== -1) {
+        sciExpr += c + '(';
+        sciDisplay = c + '(';
+      } else if (c === '1/x') {
+        sciExpr = '1/(' + (sciExpr || sciDisplay || '1') + ')';
+      } else if (c === 'x2') {
+        sciExpr = '(' + (sciExpr || sciDisplay || '0') + ')^2';
+      } else if (c === 'x3') {
+        sciExpr = '(' + (sciExpr || sciDisplay || '0') + ')^3';
+      } else if (c === 'pow') {
+        sciExpr += '^';
+      } else if (c === 'ex') {
+        sciExpr += 'e^';
+      } else if (c === '10x') {
+        sciExpr += '10^';
+      } else if (c === '3x') {
+        sciExpr += '3x(';
+      } else if (c === 'n!') {
+        sciExpr += '!';
+      } else if (c === 'pc') {
+        sciExpr += '/100';
+      } else if (c === 'EXP') {
+        sciExpr += 'e+';
+      } else if (c === '*' || c === '×') {
+        sciExpr += '×';
+      } else if (c === '/' || c === '÷') {
+        sciExpr += '÷';
+      } else if (c === '-' || c === '–') {
+        sciExpr += '–';
+      } else if (c === '+') {
+        sciExpr += '+';
+      } else {
+        sciExpr += c;
+        sciDisplay = sciExpr;
+      }
+
+      if (inEl) inEl.innerHTML = sciExpr || '&nbsp;';
+      if (outEl) outEl.innerHTML = sciDisplay;
+    };
   }
 
-  // Reusable SVG Stacked Bar Chart (identical to Calculator.net)
+  // Reusable SVG Stacked Bar Chart (identical to All In One Calculator)
   function renderStackedSvgChart(items, xAxisTitle) {
     if (!items || items.length === 0) return '';
     xAxisTitle = xAxisTitle || 'Age';
@@ -334,7 +464,7 @@
 
   var engines = {};
 // --- 401(K) CALCULATOR WITH AUTHENTIC STACKED SVG GRAPH & SCHEDULE ---
-  // Complete Universal Engine Suite for Calculator.net
+  // Complete Universal Engine Suite for All In One Calculator
 
 // 1. Amortization & Mortgage Payoff
 engines['amortization-calculator'] = engines['mortgage-payoff-calculator'] = function () {
@@ -1573,31 +1703,63 @@ engines['grade-calculator'] = function () {
 
   // --- 4. EVERYDAY & UTILITY GROUP ---
   engines['age-calculator'] = function () {
-    var bm = getInt('cmonth', 1), bd = getInt('cday', 1), by = getInt('cyear', 2000);
+    var bm = getInt('today_Month_ID', getInt('cmonth', 0)) + 1;
+    var bd = getInt('today_Day_ID', getInt('cday', 1));
+    var by = getInt('today_Year_ID', getInt('cyear', 2000));
+
     var now = new Date();
-    var tm = getInt('cmonth2', now.getMonth() + 1), td = getInt('cday2', now.getDate()), ty = getInt('cyear2', now.getFullYear());
+    var tm = getInt('ageat_Month_ID', getInt('cmonth2', now.getMonth())) + 1;
+    var td = getInt('ageat_Day_ID', getInt('cday2', now.getDate()));
+    var ty = getInt('ageat_Year_ID', getInt('cyear2', now.getFullYear()));
 
     var bDate = new Date(by, bm - 1, bd);
     var tDate = new Date(ty, tm - 1, td);
 
-    var years = ty - by, months = tm - bm, days = td - bd;
+    if (isNaN(bDate.getTime()) || isNaN(tDate.getTime())) return;
+
+    var diffMs = tDate - bDate;
+    if (diffMs < 0) {
+      var c = getResultContainer();
+      if (c) c.innerHTML = '<h2 class="h2result" style="color:#dc2626;">Date of birth must be earlier than the target date.</h2>';
+      return;
+    }
+
+    var years = ty - by;
+    var months = tm - bm;
+    var days = td - bd;
+
     if (days < 0) {
       months--;
       var prev = new Date(ty, tm - 1, 0);
       days += prev.getDate();
     }
-    if (months < 0) { years--; months += 12; }
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
 
-    var totalDays = Math.floor((tDate - bDate) / (24 * 3600 * 1000));
+    var totalDays = Math.floor(diffMs / (24 * 3600 * 1000));
+    var totalWeeks = Math.floor(totalDays / 7);
+    var daysRem = totalDays % 7;
+    var totalHours = totalDays * 24;
+    var totalMinutes = totalHours * 60;
+    var totalSeconds = totalMinutes * 60;
+    var totalMonths = years * 12 + months;
+
     var c = getResultContainer();
     if (!c) return;
     c.innerHTML = `
-      <h2 class="h2result">Age: ${years} years, ${months} months, ${days} days</h2>
-      <p style="font-size:16px;line-height:1.6;margin-top:10px;">
-        or <b>${years * 12 + months}</b> months ${days} days<br>
-        or <b>${Math.floor(totalDays / 7)}</b> weeks ${totalDays % 7} days<br>
-        or <b>${totalDays.toLocaleString()}</b> days
-      </p>
+      <div class="result-card modern-card" style="margin-bottom:20px;padding:20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;">
+        <h2 class="h2result" style="color:#166534;margin:0 0 10px 0;font-size:24px;">Result: ${years} years, ${months} months, ${days} days</h2>
+        <p style="font-size:16px;line-height:1.8;color:#334155;margin:0;">
+          or <b>${totalMonths}</b> months ${days} days<br>
+          or <b>${totalWeeks.toLocaleString()}</b> weeks ${daysRem} days<br>
+          or <b>${totalDays.toLocaleString()}</b> days<br>
+          or <b>${totalHours.toLocaleString()}</b> hours<br>
+          or <b>${totalMinutes.toLocaleString()}</b> minutes<br>
+          or <b>${totalSeconds.toLocaleString()}</b> seconds
+        </p>
+      </div>
     `;
   };
 

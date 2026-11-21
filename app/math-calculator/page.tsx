@@ -3,7 +3,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 
 export const metadata = {
-  title: "Math Calculators - Calculator.net",
+  title: "Math Calculators - All In One Calculator",
   description: "Free online math calculators for fractions, percentages, standard deviation, matrices, triangles, algebra, and geometry.",
 };
 

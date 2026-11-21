@@ -4,7 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Calculator.net: Free Online Calculators - Math, Fitness, Finance, Science",
+  title: "All In One Calculator: Free Online Calculators - Math, Fitness, Finance, Science",
   description:
     "Online calculator for quick calculations, along with a large collection of calculators on math, finance, fitness, and more, each with in-depth information.",
   icons: {
@@ -38,15 +38,21 @@ export default function RootLayout({
             <div id="logo">
               <Link href="/">
                 <img
-                  src="/img/svg/calculator-white.svg"
-                  width={208}
-                  height={22}
-                  alt="Calculator.net"
+                  src="/img/svg/allinone-logo.svg"
+                  width={220}
+                  height={34}
+                  alt="All In One Calculator"
                 />
               </Link>
             </div>
+            <nav className="topNavAbs">
+              <Link href="/financial-calculator">Financial</Link>
+              <Link href="/fitness-and-health-calculator">Fitness &amp; Health</Link>
+              <Link href="/math-calculator">Math</Link>
+              <Link href="/other-calculator">Other</Link>
+            </nav>
             <div id="login">
-              <Link href="/about-us">sign in</Link>
+              <Link href="/about-us">About</Link>
             </div>
           </div>
         </div>
@@ -55,7 +61,7 @@ export default function RootLayout({
 
         <div id="footer">
           <div id="footerin">
-            Calculator.net&apos;s sole focus is to provide fast, comprehensive,
+            All In One Calculator&apos;s sole focus is to provide fast, comprehensive,
             convenient, free online calculators in a plethora of areas.
             Currently, we have around 200 calculators to help you &quot;do the
             math&quot; quickly in areas such as finance, fitness, health, math,
@@ -69,7 +75,7 @@ export default function RootLayout({
             We coded and developed each calculator individually and put each one
             through strict, comprehensive testing. However, please inform us if
             you notice even the slightest error &ndash; your input is extremely
-            valuable to us. While most calculators on Calculator.net are designed
+            valuable to us. While most calculators on All In One Calculator are designed
             to be universally applicable for worldwide usage, some are for
             specific countries only. For example, the <i>Income Tax Calculator</i>{" "}
             is for United States residents only.
@@ -80,7 +86,7 @@ export default function RootLayout({
               <Link href="/sitemap">sitemap</Link> |{" "}
               <Link href="/about-us#terms">terms of use</Link> |{" "}
               <Link href="/about-us#privacy">privacy policy</Link> &nbsp; &copy; 2008
-              - 2026 <Link href="/">calculator.net</Link>
+              - 2026 <Link href="/">all in one calculator</Link>
             </div>
           </div>
         </div>

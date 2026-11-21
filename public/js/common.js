@@ -1,5 +1,5 @@
 /*
-(C) calculator.net all right reserved.
+(C) all in one calculator all right reserved.
 */
 function gObj(obj) {return document.getElementById(obj);}
 function trimAll(sString){return sString.trim();}
@@ -99,3 +99,16 @@ function saveCalResult(scrName, scrNum, scrSubName, scrRName, scrRVal){
 }
 function srDeleteRow(e,t){return fetch("/my-account/save-delete.php?srid="+e).then(e=>e.text()).then(n=>{if("deleted"==n.trim()){var a=gObj("savedlist"+e);a&&(a.style.display="none");var l=gObj("sclUl"+t);if(l){var s=l.getElementsByTagName("li"),r=0;for(let i=0;i<s.length;i++)"none"!=s[i].style.display&&(r=1);if(0==r){var o=gObj("sclWrapper"+t);o&&(o.style.display="none")}}}else alert("Something went wrong. Please try again!")}).catch(e=>{alert("Something went wrong. Please try again!")}),!0}
 function shSavedResults(l){return"+ Saved Calculations"==gObj("sclTitle"+l).innerHTML?(gObj("sclTitle"+l).innerHTML="Close",gObj("sclList"+l).style.display="block",gObj("sclWrapper"+l).classList.add("panel")):(gObj("sclTitle"+l).innerHTML="+ Saved Calculations",gObj("sclList"+l).style.display="none",gObj("sclWrapper"+l).classList.remove("panel")),!0}
+
+function updateDateInput(name) {
+  var m = document.getElementById(name + '_Month_ID');
+  var d = document.getElementById(name + '_Day_ID');
+  var y = document.getElementById(name + '_Year_ID');
+  var hidden = document.getElementById(name) || document.querySelector('input[name="' + name + '"]');
+  if (m && d && y && hidden) {
+    var mm = parseInt(m.value, 10) + 1;
+    var dd = parseInt(d.value, 10);
+    var yyyy = parseInt(y.value, 10) || 2026;
+    hidden.value = (mm < 10 ? '0' + mm : mm) + '/' + (dd < 10 ? '0' + dd : dd) + '/' + yyyy;
+  }
+}
