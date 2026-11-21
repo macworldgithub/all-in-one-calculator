@@ -5,6 +5,7 @@
  */
 
 (function () {
+  var lastSubmittedForm = null;
   // --- Formatting Helpers ---
   function fmtMoney(num, cents) {
     if (cents === undefined) cents = 2;
@@ -1155,10 +1156,11 @@ engines['grade-calculator'] = function () {
     return { letter: 'F', gpa: '0.0' };
   }
 
-  // Check if Final Exam Target Planning form was submitted
-  var activeForm = document.activeElement ? document.activeElement.closest('form') : null;
+    // Form 1 (gradeform: course assignments) vs Form 2 (graderaiseform: final exam target)
+  var activeForm = lastSubmittedForm || (document.activeElement ? document.activeElement.closest('form') : null);
   var isRaiseForm = (activeForm && activeForm.name === 'graderaiseform') ||
-    (document.querySelector('[name="graderaiseform"] [name="x"]') === document.activeElement);
+    (document.querySelector('[name="graderaiseform"] [name="x"]') === document.activeElement) ||
+    (window.location.hash === '#gplanning' && (!activeForm || activeForm.name !== 'gradeform'));
 
   if (isRaiseForm) {
     var cur = getFloat('grcCurrentGPA', getFloat('ccurrentgrade', 88));
@@ -1249,16 +1251,27 @@ engines['grade-calculator'] = function () {
     var weightFallback = getFloat('grcCurrentCredit', getFloat('cweight', 40)) / 100;
     if (weightFallback <= 0) weightFallback = 0.40;
     var neededFallback = (targetFallback - curFallback * (1 - weightFallback)) / weightFallback;
+    var fallbackColor = neededFallback <= 100 && neededFallback >= 0 ? '#059669' : '#dc2626';
+    var fallbackStatusMsg = '';
+    if (neededFallback > 100) {
+      fallbackStatusMsg = '<p style="font-size:14px;color:#dc2626;background:#fef2f2;border:1px solid #fecaca;padding:10px 12px;border-radius:8px;margin-bottom:12px;"><b>Goal Exceeds 100%:</b> You would need ' + neededFallback.toFixed(1) + '% on the final exam, which exceeds 100%. Consider extra credit options or adjusting your target grade.</p>';
+    } else if (neededFallback < 0) {
+      fallbackStatusMsg = '<p style="font-size:14px;color:#059669;background:#f0fdf4;border:1px solid #bbf7d0;padding:10px 12px;border-radius:8px;margin-bottom:12px;"><b>Goal Already Secured:</b> You have secured your target grade even with a 0% on the final.</p>';
+    } else {
+      fallbackStatusMsg = '<p style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">You need to score at least <b>' + neededFallback.toFixed(1) + '%</b> on your final exam to reach <b>' + targetFallback + '%</b> in the course.</p>';
+    }
 
     var c = getResultContainer();
     c.innerHTML = '<div class="result-card">' +
-      '<h2 class="h2result">Grade Planning Result</h2>' +
-      '<p class="verybigtext" style="color:' + (neededFallback <= 100 ? '#059669' : '#dc2626') + '">Needed on Final: <b>' + neededFallback.toFixed(1) + '%</b></p>' +
+      '<h2 class="h2result">Final Exam Planning Result</h2>' +
+      '<p class="verybigtext" style="color:' + fallbackColor + '">Grade Required on Final: <b>' + neededFallback.toFixed(1) + '%</b></p>' +
+      fallbackStatusMsg +
       '<table class="cinfoT" width="100%">' +
+      '<tr><td class="cinfoHd" colspan="2">Calculation Breakdown</td></tr>' +
       '<tr><td>Current Grade:</td><td align="right"><b>' + curFallback + '%</b></td></tr>' +
       '<tr><td>Target Class Grade:</td><td align="right"><b>' + targetFallback + '%</b></td></tr>' +
       '<tr><td>Final Exam Weight:</td><td align="right"><b>' + (weightFallback * 100).toFixed(0) + '%</b></td></tr>' +
-      '<tr style="background:var(--color-success-bg);"><td><b>Score Required on Final:</b></td><td align="right"><b>' + neededFallback.toFixed(1) + '%</b></td></tr>' +
+      '<tr style="background:var(--color-success-bg);"><td><b>Score Required on Final:</b></td><td align="right" style="color:' + fallbackColor + ';font-size:16px;"><b>' + neededFallback.toFixed(1) + '%</b></td></tr>' +
       '</table>' +
       '</div>';
     if (typeof c.scrollIntoView === 'function') c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -4434,6 +4447,7 @@ engines['grade-calculator'] = function () {
 
 if (typeof document !== 'undefined') {
     document.addEventListener('submit', function (e) {
+      lastSubmittedForm = e.target;
       var handled = runCalculator();
       if (handled) {
         e.preventDefault();
@@ -4444,6 +4458,7 @@ if (typeof document !== 'undefined') {
     document.addEventListener('click', function (e) {
       var t = e.target;
       if (t && (t.type === 'submit' || t.value === 'Calculate' || (t.classList && t.classList.contains('subbtn')))) {
+        lastSubmittedForm = t.closest('form');
         var handled = runCalculator();
         if (handled) {
           e.preventDefault();

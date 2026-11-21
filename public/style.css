@@ -3954,3 +3954,201 @@ html.light .macro-carb {
     padding: 5px 3px !important;
   }
 }
+
+
+/* ==========================================================================
+   UNIVERSAL THEME-AWARE PLACEHOLDERS & COMPONENT RESPONSIVENESS
+   Enforces zero text overlap, fluid multi-input cells, 16px iOS anti-zoom inputs
+   ========================================================================== */
+
+/* Universal Placeholder Styles */
+::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.75 !important;
+  font-size: 14px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.75 !important;
+  font-size: 14px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #64748b !important;
+  opacity: 0.85 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder,
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.85 !important;
+}
+
+/* Ensure mobile form inputs always use 16px font to prevent Safari auto-zoom */
+@media (max-width: 768px) {
+  .panel input[type="text"],
+  .panel input[type="number"],
+  .panel input[type="date"],
+  .panel select,
+  .panel textarea,
+  #content input[type="text"],
+  #content input[type="number"],
+  #content select,
+  #content textarea,
+  .intext, .innormal, .inlong, .inlonger, .inlongest, .inhalf {
+    font-size: 16px !important;
+    min-height: 42px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Compound multi-input cells on mobile (Feet + Inches, Years + Months) */
+  .panel td[nowrap],
+  #content td[nowrap] {
+    white-space: normal !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .panel td[nowrap] input,
+  #content td[nowrap] input {
+    flex: 1 1 75px !important;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Select dropdowns inside compound cells */
+  .panel td select,
+  #content td select {
+    min-height: 42px !important;
+    font-size: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Mortgage & Financial Option Tables Fluidity */
+  #cmoreoptioninputs,
+  #ctaxcost,
+  #cadditionalonetimediv table {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: table !important;
+    table-layout: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  #cmoreoptioninputs tr,
+  #ctaxcost tr {
+    display: table-row !important;
+  }
+
+  #cmoreoptioninputs td,
+  #ctaxcost td {
+    display: table-cell !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    padding: 6px 4px !important;
+    font-size: 13.5px !important;
+    vertical-align: middle !important;
+  }
+
+  /* Submit action buttons on mobile */
+  .panel input[type="submit"],
+  .panel input[type="button"],
+  .panel button[type="submit"],
+  .panel .bluebtn,
+  .panel #bluebtn,
+  #content input[type="submit"],
+  #content input[type="button"] {
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    border-radius: var(--radius-sm) !important;
+    display: block !important;
+    margin: 8px 0 !important;
+    box-sizing: border-box !important;
+    touch-action: manipulation !important;
+  }
+
+  /* Mobile Navbar hamburger and header action buttons */
+  .mobile-hamburger-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    touch-action: manipulation !important;
+  }
+
+  .header-icon-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    touch-action: manipulation !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel td table td,
+  #cmoreoptioninputs td,
+  #ctaxcost td {
+    font-size: 13px !important;
+    padding: 5px 3px !important;
+  }
+
+  .hero-title {
+    font-size: clamp(28px, 8vw, 36px) !important;
+    line-height: 1.15 !important;
+  }
+
+  .hero-subtitle {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+
+  .stat-item {
+    min-width: 70px !important;
+  }
+  .stat-number {
+    font-size: 20px !important;
+  }
+  .stat-label {
+    font-size: 11px !important;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .panel, #content .panel, .cpanel {
+    padding: 12px 8px !important;
+  }
+
+  .header-container {
+    padding: 0 8px !important;
+  }
+
+  .hero-section {
+    padding: 24px 12px 28px !important;
+  }
+
+  .popular-chip {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+}
