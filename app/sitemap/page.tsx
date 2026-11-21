@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { getCalculatorsIndex } from "@/lib/calculators";
+import { FinancialIcon, FitnessIcon, MathIcon, EverydayIcon, SparklesIcon } from "@/components/Icons";
 
 export const metadata = {
   title: "Sitemap - All-in-one-calculator",
@@ -12,10 +13,10 @@ export default function SitemapPage() {
   const allCalcs = getCalculatorsIndex();
 
   const categories = [
-    { key: "financial", title: "Financial Calculators", href: "/financial-calculator", icon: "💰" },
-    { key: "fitness-and-health", title: "Fitness & Health Calculators", href: "/fitness-and-health-calculator", icon: "💪" },
-    { key: "math", title: "Math Calculators", href: "/math-calculator", icon: "📐" },
-    { key: "other", title: "Other & Everyday Calculators", href: "/other-calculator", icon: "⚡" },
+    { key: "financial", title: "Financial Calculators", href: "/financial-calculator", icon: <FinancialIcon size={20} color="#2563eb" /> },
+    { key: "fitness-and-health", title: "Fitness & Health Calculators", href: "/fitness-and-health-calculator", icon: <FitnessIcon size={20} color="#059669" /> },
+    { key: "math", title: "Math Calculators", href: "/math-calculator", icon: <MathIcon size={20} color="#7c3aed" /> },
+    { key: "other", title: "Other & Everyday Calculators", href: "/other-calculator", icon: <EverydayIcon size={20} color="#d97706" /> },
   ];
 
   return (
@@ -29,7 +30,10 @@ export default function SitemapPage() {
           </nav>
 
           <header className="hub-header">
-            <div className="hub-badge">📑 Directory</div>
+            <div className="hub-badge">
+              <SparklesIcon size={14} color="var(--color-primary)" />
+              <span>Directory</span>
+            </div>
             <h1 className="hub-title">Complete Calculator Sitemap</h1>
             <p className="hub-subtitle">
               Browse all 200+ free online calculators organized by subject and practical use case.

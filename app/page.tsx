@@ -3,6 +3,16 @@ import ScientificCalculator from "@/components/ScientificCalculator";
 import SearchBox from "@/components/SearchBox";
 import CategoryTiles from "@/components/CategoryTiles";
 import Link from "next/link";
+import {
+  SparklesIcon,
+  HomeIcon,
+  CreditCardIcon,
+  ScaleIcon,
+  FlameIcon,
+  CalendarIcon,
+  MathIcon,
+  PercentIcon,
+} from "@/components/Icons";
 
 export default function HomePage() {
   return (
@@ -14,7 +24,8 @@ export default function HomePage() {
           <div className="hero-content">
             <div className="hero-badge">
               <span className="badge-pulse"></span>
-              ⚡ Free &amp; Instant Calculations
+              <SparklesIcon size={14} color="var(--color-primary)" />
+              <span>Free &amp; Instant Calculations</span>
             </div>
             <h1 className="hero-title">
               All-in-one<span className="hero-title-accent">-calculator</span>
@@ -64,14 +75,38 @@ export default function HomePage() {
         <div className="popular-bar-container">
           <span className="popular-bar-label">Trending Now:</span>
           <div className="popular-bar-chips">
-            <Link href="/mortgage-calculator" className="popular-chip">🏠 Mortgage</Link>
-            <Link href="/loan-calculator" className="popular-chip">💳 Loan</Link>
-            <Link href="/bmi-calculator" className="popular-chip">⚖️ BMI</Link>
-            <Link href="/calorie-calculator" className="popular-chip">🥗 Calorie</Link>
-            <Link href="/age-calculator" className="popular-chip">🎂 Age</Link>
-            <Link href="/scientific-calculator" className="popular-chip">🔬 Scientific</Link>
-            <Link href="/percent-calculator" className="popular-chip">📊 Percentage</Link>
-            <Link href="/date-calculator" className="popular-chip">📅 Date</Link>
+            <Link href="/mortgage-calculator" className="popular-chip">
+              <HomeIcon size={14} />
+              <span>Mortgage</span>
+            </Link>
+            <Link href="/loan-calculator" className="popular-chip">
+              <CreditCardIcon size={14} />
+              <span>Loan</span>
+            </Link>
+            <Link href="/bmi-calculator" className="popular-chip">
+              <ScaleIcon size={14} />
+              <span>BMI</span>
+            </Link>
+            <Link href="/calorie-calculator" className="popular-chip">
+              <FlameIcon size={14} />
+              <span>Calorie</span>
+            </Link>
+            <Link href="/age-calculator" className="popular-chip">
+              <CalendarIcon size={14} />
+              <span>Age</span>
+            </Link>
+            <Link href="/scientific-calculator" className="popular-chip">
+              <MathIcon size={14} />
+              <span>Scientific</span>
+            </Link>
+            <Link href="/percent-calculator" className="popular-chip">
+              <PercentIcon size={14} />
+              <span>Percentage</span>
+            </Link>
+            <Link href="/date-calculator" className="popular-chip">
+              <CalendarIcon size={14} />
+              <span>Date</span>
+            </Link>
           </div>
         </div>
       </section>

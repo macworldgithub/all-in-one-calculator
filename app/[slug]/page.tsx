@@ -5,6 +5,7 @@ import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import ScientificCalculator from "@/components/ScientificCalculator";
 import { getCalculatorsIndex, getCalculatorBySlug } from "@/lib/calculators";
+import { MathIcon } from "@/components/Icons";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -65,7 +66,10 @@ export default async function CalculatorPage({ params }: PageProps) {
               </nav>
 
               <header className="hub-header" style={{ marginBottom: "22px" }}>
-                <div className="hub-badge">🔬 Precision Math</div>
+                <div className="hub-badge">
+                  <MathIcon size={14} color="#7c3aed" />
+                  <span>Precision Math</span>
+                </div>
                 <h1 className="hub-title">{calc.title}</h1>
                 <p className="hub-subtitle">
                   {slug === "basic-calculator"

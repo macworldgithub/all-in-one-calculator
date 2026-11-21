@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { getCalculatorsIndex } from "@/lib/calculators";
+import { MathIcon } from "@/components/Icons";
 
 export const metadata = {
   title: "Math Calculators - All-in-one-calculator",
@@ -28,7 +29,10 @@ export default function MathCalculatorPage() {
 
           {/* Hub Header */}
           <header className="hub-header">
-            <div className="hub-badge">📐 45 Math &amp; Science Tools</div>
+            <div className="hub-badge">
+              <MathIcon size={14} color="#7c3aed" />
+              <span>45 Math &amp; Science Tools</span>
+            </div>
             <h1 className="hub-title">Math Calculators</h1>
             <p className="hub-subtitle">
               Solve complex mathematical formulas, perform scientific computations, calculate percentages, fractions, standard deviations, and geometric properties.

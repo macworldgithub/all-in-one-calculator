@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { getCalculatorsIndex } from "@/lib/calculators";
+import { FitnessIcon } from "@/components/Icons";
 
 export const metadata = {
   title: "Fitness & Health Calculators - All-in-one-calculator",
@@ -28,7 +29,10 @@ export default function FitnessCalculatorPage() {
 
           {/* Hub Header */}
           <header className="hub-header">
-            <div className="hub-badge">💪 32 Health &amp; Fitness Tools</div>
+            <div className="hub-badge">
+              <FitnessIcon size={14} color="#059669" />
+              <span>32 Health &amp; Fitness Tools</span>
+            </div>
             <h1 className="hub-title">Fitness &amp; Health Calculators</h1>
             <p className="hub-subtitle">
               Track your wellness goals, calculate daily caloric needs, body fat percentage, ideal weight, BMI, running pace, and pregnancy milestones.

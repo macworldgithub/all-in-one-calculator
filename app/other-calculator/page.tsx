@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { getCalculatorsIndex } from "@/lib/calculators";
+import { EverydayIcon } from "@/components/Icons";
 
 export const metadata = {
   title: "Other & Everyday Calculators - All-in-one-calculator",
@@ -28,7 +29,10 @@ export default function OtherCalculatorPage() {
 
           {/* Hub Header */}
           <header className="hub-header">
-            <div className="hub-badge">⚡ 62 Everyday Tools</div>
+            <div className="hub-badge">
+              <EverydayIcon size={14} color="#d97706" />
+              <span>62 Everyday Tools</span>
+            </div>
             <h1 className="hub-title">Other &amp; Everyday Calculators</h1>
             <p className="hub-subtitle">
               Tools for daily life, productivity, and construction. Calculate exact age, date intervals, hours worked, GPA, grades, concrete volume, unit conversions, and more.

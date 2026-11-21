@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Script from "next/script";
 import Navbar from "@/components/Navbar";
+import { ShieldCheckIcon, BoltIcon, DeviceMobileIcon } from "@/components/Icons";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -54,9 +55,18 @@ export default function RootLayout({
                   All-in-one-calculator provides fast, comprehensive, and 100% free online calculators across finance, health, fitness, math, and everyday tools. No signup or download required.
                 </p>
                 <div className="footer-badge-row">
-                  <span className="footer-badge">🔒 100% Free</span>
-                  <span className="footer-badge">⚡ Instant Math</span>
-                  <span className="footer-badge">📱 All Screens</span>
+                  <span className="footer-badge">
+                    <ShieldCheckIcon size={14} color="#059669" />
+                    <span>100% Free</span>
+                  </span>
+                  <span className="footer-badge">
+                    <BoltIcon size={14} color="#2563eb" />
+                    <span>Instant Math</span>
+                  </span>
+                  <span className="footer-badge">
+                    <DeviceMobileIcon size={14} color="#7c3aed" />
+                    <span>All Screens</span>
+                  </span>
                 </div>
               </div>
 

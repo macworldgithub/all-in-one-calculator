@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import { PlugIcon } from "@/components/Icons";
 
 export const metadata = {
   title: "Mobile Apps and Plugins - All-in-one-calculator",
@@ -19,7 +20,10 @@ export default function Page() {
           </nav>
 
           <header className="hub-header">
-            <div className="hub-badge">🔌 Integrations</div>
+            <div className="hub-badge">
+              <PlugIcon size={14} color="var(--color-primary)" />
+              <span>Integrations</span>
+            </div>
             <h1 className="hub-title">Mobile Apps &amp; Plugins</h1>
             <p className="hub-subtitle">
               Embed All-in-one-calculator tools directly onto your website or blog.

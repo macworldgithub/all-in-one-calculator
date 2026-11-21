@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { FinancialIcon, FitnessIcon, MathIcon, EverydayIcon } from "./Icons";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -29,10 +30,10 @@ export default function Navbar() {
   }, [mobileMenuOpen]);
 
   const navLinks = [
-    { label: "Financial", href: "/financial-calculator", icon: "💰" },
-    { label: "Fitness & Health", href: "/fitness-and-health-calculator", icon: "💪" },
-    { label: "Math", href: "/math-calculator", icon: "📐" },
-    { label: "Other", href: "/other-calculator", icon: "⚡" },
+    { label: "Financial", href: "/financial-calculator", icon: <FinancialIcon size={16} /> },
+    { label: "Fitness & Health", href: "/fitness-and-health-calculator", icon: <FitnessIcon size={16} /> },
+    { label: "Math", href: "/math-calculator", icon: <MathIcon size={16} /> },
+    { label: "Other", href: "/other-calculator", icon: <EverydayIcon size={16} /> },
   ];
 
   const popularQuickLinks = [

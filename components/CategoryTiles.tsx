@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import { FinancialIcon, FitnessIcon, MathIcon, EverydayIcon } from "./Icons";
 
 export default function CategoryTiles() {
   const categories = [
@@ -7,7 +8,8 @@ export default function CategoryTiles() {
       title: "Financial",
       href: "/financial-calculator",
       badge: "76 Tools",
-      icon: "💰",
+      categoryKey: "financial",
+      icon: <FinancialIcon size={24} color="#2563eb" />,
       description: "Mortgages, Loans, Investments & Taxes",
       links: [
         { label: "Mortgage Calculator", href: "/mortgage-calculator" },
@@ -29,7 +31,8 @@ export default function CategoryTiles() {
       title: "Fitness & Health",
       href: "/fitness-and-health-calculator",
       badge: "32 Tools",
-      icon: "💪",
+      categoryKey: "fitness",
+      icon: <FitnessIcon size={24} color="#059669" />,
       description: "BMI, Calories, Body Fat & Pregnancy",
       links: [
         { label: "BMI Calculator", href: "/bmi-calculator" },
@@ -51,7 +54,8 @@ export default function CategoryTiles() {
       title: "Math & Science",
       href: "/math-calculator",
       badge: "45 Tools",
-      icon: "📐",
+      categoryKey: "math",
+      icon: <MathIcon size={24} color="#7c3aed" />,
       description: "Scientific, Percentages & Geometry",
       links: [
         { label: "Scientific Calculator", href: "/scientific-calculator" },
@@ -73,7 +77,8 @@ export default function CategoryTiles() {
       title: "Other & Everyday",
       href: "/other-calculator",
       badge: "62 Tools",
-      icon: "⚡",
+      categoryKey: "other",
+      icon: <EverydayIcon size={24} color="#d97706" />,
       description: "Age, Dates, GPA, Concrete & Tools",
       links: [
         { label: "Age Calculator", href: "/age-calculator" },
@@ -106,9 +111,11 @@ export default function CategoryTiles() {
 
         <div className="category-cards-grid">
           {categories.map((cat) => (
-            <div key={cat.title} className="category-deck-card">
+            <div key={cat.title} className={`category-deck-card category-card-${cat.categoryKey}`}>
               <div className="deck-card-top">
-                <div className="deck-icon-badge">{cat.icon}</div>
+                <div className={`deck-icon-badge deck-icon-${cat.categoryKey}`}>
+                  {cat.icon}
+                </div>
                 <div className="deck-title-group">
                   <h3 className="deck-title">
                     <Link href={cat.href}>{cat.title}</Link>

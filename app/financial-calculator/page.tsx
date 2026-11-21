@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import { getCalculatorsIndex } from "@/lib/calculators";
+import { FinancialIcon } from "@/components/Icons";
 
 export const metadata = {
   title: "Financial Calculators - All-in-one-calculator",
@@ -28,7 +29,10 @@ export default function FinancialCalculatorPage() {
 
           {/* Hub Header */}
           <header className="hub-header">
-            <div className="hub-badge">💰 76 Financial Tools</div>
+            <div className="hub-badge">
+              <FinancialIcon size={14} color="var(--color-primary)" />
+              <span>76 Financial Tools</span>
+            </div>
             <h1 className="hub-title">Financial Calculators</h1>
             <p className="hub-subtitle">
               Make confident financial decisions with accurate calculators for mortgages, auto loans, investments, retirement, income taxes, and debt management.
