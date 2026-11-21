@@ -239,6 +239,11 @@ export default function ScientificCalculator() {
       } else if (e.key === "Backspace") handleCommand("bk");
       else if (e.key === "Escape") handleCommand("C");
       else if (e.key === "(" || e.key === ")") handleCommand(e.key);
+      else if (e.key === "%") handleCommand("pc");
+      else if (e.key === "^") handleCommand("pow");
+      else if (e.key === "!") handleCommand("n!");
+      else if (e.key === "p" || e.key === "P") handleCommand("pi");
+      else if (e.key === "e" || e.key === "E") handleCommand("e");
     };
 
     window.addEventListener("keydown", onKey);

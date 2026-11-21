@@ -233,6 +233,44 @@
       if (inEl) inEl.innerHTML = sciExpr || '&nbsp;';
       if (outEl) outEl.innerHTML = sciDisplay;
     };
+
+    // Physical Keyboard support for Scientific Calculator & Enter key on forms
+    window.addEventListener('keydown', function (e) {
+      var activeTag = document.activeElement ? document.activeElement.tagName : '';
+      var isInput = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT';
+
+      // 1. Enter key triggers calculate in form inputs
+      if (isInput) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          runCalculator();
+        }
+        return;
+      }
+
+      // 2. Physical keyboard typing for scientific calculator
+      if (document.getElementById('sciOutPut') && typeof window.r === 'function') {
+        var key = e.key;
+        if (key >= '0' && key <= '9') { window.r(key); e.preventDefault(); }
+        else if (key === '+') { window.r('+'); e.preventDefault(); }
+        else if (key === '-') { window.r('-'); e.preventDefault(); }
+        else if (key === '*') { window.r('*'); e.preventDefault(); }
+        else if (key === '/') { window.r('/'); e.preventDefault(); }
+        else if (key === '.' || key === ',') { window.r('.'); e.preventDefault(); }
+        else if (key === 'Enter' || key === '=') { window.r('='); e.preventDefault(); }
+        else if (key === 'Backspace') { window.r('bk'); e.preventDefault(); }
+        else if (key === 'Escape') { window.r('C'); e.preventDefault(); }
+        else if (key === '(' || key === ')') { window.r(key); e.preventDefault(); }
+        else if (key === '%') { window.r('pc'); e.preventDefault(); }
+        else if (key === '^') { window.r('pow'); e.preventDefault(); }
+        else if (key === '!') { window.r('n!'); e.preventDefault(); }
+        else if (key === 'p' || key === 'P') { window.r('pi'); e.preventDefault(); }
+        else if (key === 'e' || key === 'E') { window.r('e'); e.preventDefault(); }
+        else if (key === 's' || key === 'S') { window.r('sin'); e.preventDefault(); }
+        else if (key === 'c' || key === 'C') { window.r('cos'); e.preventDefault(); }
+        else if (key === 't' || key === 'T') { window.r('tan'); e.preventDefault(); }
+      }
+    });
   }
 
   // Reusable SVG Stacked Bar Chart (identical to All In One Calculator)
@@ -946,59 +984,311 @@ engines['concrete-calculator'] = function () {
 
 // 14. GPA Calculator
 engines['gpa-calculator'] = function () {
-  var credits = [3, 3, 3, 4, 3];
-  var grades = [4.0, 3.7, 3.3, 4.0, 3.0]; // sample or read from inputs
+  var letterPoints = {
+    'a+': 4.3, 'a': 4.0, 'a-': 3.7,
+    'b+': 3.3, 'b': 3.0, 'b-': 2.7,
+    'c+': 2.3, 'c': 2.0, 'c-': 1.7,
+    'd+': 1.3, 'd': 1.0, 'd-': 0.7,
+    'f': 0.0
+  };
+
+  // Check if GPA Planning form was submitted
+  var activeForm = document.activeElement ? document.activeElement.closest('form') : null;
+  var isRaiseForm = (activeForm && activeForm.name === 'gparaiseform') ||
+    (document.querySelector('[name="gparaiseform"] [name="x"]') === document.activeElement);
+
+  if (isRaiseForm) {
+    var curGPA = getFloat('grcCurrentGPA', 2.8);
+    var targetGPA = getFloat('grcTargetGPA', 3.0);
+    var curCred = getFloat('grcCurrentCredit', 25);
+    var addCred = getFloat('grcAdditionalCredit', 15);
+
+    var neededGPA = (targetGPA * (curCred + addCred) - curGPA * curCred) / (addCred || 1);
+    var neededColor = neededGPA <= 4.0 ? '#059669' : '#dc2626';
+
+    var c = getResultContainer();
+    c.innerHTML = '<div class="result-card">' +
+      '<h2 class="h2result">GPA Planning Result</h2>' +
+      '<p class="verybigtext" style="color:' + neededColor + '">Required Future GPA: <b>' + neededGPA.toFixed(2) + '</b></p>' +
+      '<p style="font-size:14px;color:#334155;margin-bottom:12px;">' +
+      'To raise your GPA from <b>' + curGPA.toFixed(2) + '</b> to <b>' + targetGPA.toFixed(2) + '</b> across <b>' + addCred + '</b> new credits, you must maintain an average GPA of <b>' + neededGPA.toFixed(2) + '</b>.' +
+      '</p>' +
+      '<table class="cinfoT" width="100%">' +
+      '<tr><td class="cinfoHd" colspan="2">Planning Summary</td></tr>' +
+      '<tr><td>Current GPA:</td><td align="right"><b>' + curGPA.toFixed(2) + '</b></td></tr>' +
+      '<tr><td>Target Cumulative GPA:</td><td align="right"><b>' + targetGPA.toFixed(2) + '</b></td></tr>' +
+      '<tr><td>Current Credits Earned:</td><td align="right"><b>' + curCred + '</b></td></tr>' +
+      '<tr><td>Additional Credits to Take:</td><td align="right"><b>' + addCred + '</b></td></tr>' +
+      '<tr style="background:#f0fdf4;"><td><b>Minimum GPA Needed in Future Courses:</b></td><td align="right" style="color:' + neededColor + ';font-size:16px;"><b>' + neededGPA.toFixed(2) + '</b></td></tr>' +
+      '</table>' +
+      '</div>';
+    c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return true;
+  }
+
+  // Course GPA Calculation
   var totalCredits = 0;
   var totalPoints = 0;
+  var rows = [];
 
-  for (var i = 1; i <= 8; i++) {
-    var cr = getFloat('credit_' + i, 0) || getFloat('ccredits' + i, 0);
-    var gr = getFloat('grade_' + i, 0) || getFloat('cgrade' + i, 0);
-    if (cr > 0) {
+  for (var i = 1; i <= 20; i++) {
+    var nameEl = document.querySelector('[name="da' + i + '"]');
+    var creditEl = document.querySelector('[name="ca' + i + '"]');
+    var letterEl = document.querySelector('[name="la' + i + '"]');
+    var scoreEl = document.querySelector('[name="sa' + i + '"]');
+
+    if (!creditEl && !letterEl) continue;
+
+    var cr = creditEl ? parseFloat(creditEl.value) : NaN;
+    if (isNaN(cr) || cr <= 0) continue;
+
+    var pts = NaN;
+    var letterVal = letterEl ? letterEl.value.toLowerCase().trim() : '';
+    var scoreVal = scoreEl ? scoreEl.value.trim() : '';
+
+    if (scoreVal !== '') {
+      var numSc = parseFloat(scoreVal);
+      if (!isNaN(numSc)) {
+        if (numSc >= 93) pts = 4.0;
+        else if (numSc >= 90) pts = 3.7;
+        else if (numSc >= 87) pts = 3.3;
+        else if (numSc >= 83) pts = 3.0;
+        else if (numSc >= 80) pts = 2.7;
+        else if (numSc >= 77) pts = 2.3;
+        else if (numSc >= 73) pts = 2.0;
+        else if (numSc >= 70) pts = 1.7;
+        else if (numSc >= 67) pts = 1.3;
+        else if (numSc >= 63) pts = 1.0;
+        else if (numSc >= 60) pts = 0.7;
+        else pts = 0.0;
+      }
+    } else if (letterVal && letterPoints.hasOwnProperty(letterVal)) {
+      pts = letterPoints[letterVal];
+    }
+
+    if (!isNaN(pts)) {
       totalCredits += cr;
-      totalPoints += cr * gr;
+      totalPoints += cr * pts;
+      rows.push({
+        name: (nameEl && nameEl.value.trim()) || ('Course ' + i),
+        credits: cr,
+        grade: (letterVal.toUpperCase() || (scoreVal + '%')),
+        pts: (cr * pts).toFixed(1)
+      });
     }
   }
 
   if (totalCredits === 0) {
-    totalCredits = 15;
-    totalPoints = 54; // default 3.60
+    totalCredits = 8;
+    totalPoints = 29.5;
   }
 
   var gpa = totalPoints / totalCredits;
+  var rowsHtml = rows.map(function (r) {
+    return '<tr><td>' + r.name + '</td><td align="center">' + r.credits + '</td><td align="center">' + r.grade + '</td><td align="right">' + r.pts + '</td></tr>';
+  }).join('');
 
   var c = getResultContainer();
-  c.innerHTML = `
-    <h2 class="h2result">GPA Result</h2>
-    <p class="verybigtext">Cumulative GPA: <font color="green"><b>${gpa.toFixed(2)}</b></font></p>
-    <table class="cinfoT" width="100%">
-      <tr><td>Total Credits:</td><td align="right"><b>${totalCredits}</b></td></tr>
-      <tr><td>Total Grade Points:</td><td align="right">${totalPoints.toFixed(1)}</td></tr>
-      <tr style="background:#eaf2e8;"><td><b>Calculated GPA:</b></td><td align="right"><font size="+1"><b>${gpa.toFixed(2)} / 4.0</b></font></td></tr>
-    </table>
-  `;
+  c.innerHTML = '<div class="result-card">' +
+    '<h2 class="h2result">GPA Result</h2>' +
+    '<p class="verybigtext" style="color:#059669;">Calculated GPA: <b>' + gpa.toFixed(2) + '</b></p>' +
+    '<table class="cinfoT" width="100%">' +
+    '<tr><td class="cinfoHd">Course</td><td class="cinfoHdL" align="center">Credits</td><td class="cinfoHdL" align="center">Grade</td><td class="cinfoHdL" align="right">Grade Points</td></tr>' +
+    rowsHtml +
+    '<tr style="background:#f1f5f9;font-weight:700;"><td>Total</td><td align="center">' + totalCredits + '</td><td align="center">-</td><td align="right">' + totalPoints.toFixed(1) + '</td></tr>' +
+    '<tr style="background:#f0fdf4;"><td colspan="2"><b>Overall GPA:</b></td><td colspan="2" align="right" style="font-size:18px;color:#059669;"><b>' + gpa.toFixed(2) + ' / 4.0</b></td></tr>' +
+    '</table>' +
+    '</div>';
+  c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   return true;
 };
 
 // 15. Grade Calculator
 engines['grade-calculator'] = function () {
-  var curGrade = getFloat('ccurrentgrade', 85);
-  var targetGrade = getFloat('ctargetgrade', 90);
-  var finalWeight = getFloat('cweight', 20) / 100;
+  var letterMap = {
+    'a+': { pct: 98.5, gpa: 4.3, label: 'A+' },
+    'a': { pct: 95.0, gpa: 4.0, label: 'A' },
+    'a-': { pct: 91.0, gpa: 3.7, label: 'A-' },
+    'b+': { pct: 88.0, gpa: 3.3, label: 'B+' },
+    'b': { pct: 84.5, gpa: 3.0, label: 'B' },
+    'b-': { pct: 81.0, gpa: 2.7, label: 'B-' },
+    'c+': { pct: 78.0, gpa: 2.3, label: 'C+' },
+    'c': { pct: 74.5, gpa: 2.0, label: 'C' },
+    'c-': { pct: 71.0, gpa: 1.7, label: 'C-' },
+    'd+': { pct: 68.0, gpa: 1.3, label: 'D+' },
+    'd': { pct: 64.5, gpa: 1.0, label: 'D' },
+    'd-': { pct: 61.0, gpa: 0.7, label: 'D-' },
+    'f': { pct: 50.0, gpa: 0.0, label: 'F' }
+  };
 
-  var needed = (targetGrade - curGrade * (1 - finalWeight)) / finalWeight;
+  function getGradeInfo(pct) {
+    if (pct >= 97) return { letter: 'A+', gpa: '4.3' };
+    if (pct >= 93) return { letter: 'A', gpa: '4.0' };
+    if (pct >= 90) return { letter: 'A-', gpa: '3.7' };
+    if (pct >= 87) return { letter: 'B+', gpa: '3.3' };
+    if (pct >= 83) return { letter: 'B', gpa: '3.0' };
+    if (pct >= 80) return { letter: 'B-', gpa: '2.7' };
+    if (pct >= 77) return { letter: 'C+', gpa: '2.3' };
+    if (pct >= 73) return { letter: 'C', gpa: '2.0' };
+    if (pct >= 70) return { letter: 'C-', gpa: '1.7' };
+    if (pct >= 67) return { letter: 'D+', gpa: '1.3' };
+    if (pct >= 63) return { letter: 'D', gpa: '1.0' };
+    if (pct >= 60) return { letter: 'D-', gpa: '0.7' };
+    return { letter: 'F', gpa: '0.0' };
+  }
+
+  // Check if Final Exam Target Planning form was submitted
+  var activeForm = document.activeElement ? document.activeElement.closest('form') : null;
+  var isRaiseForm = (activeForm && activeForm.name === 'graderaiseform') ||
+    (document.querySelector('[name="graderaiseform"] [name="x"]') === document.activeElement);
+
+  if (isRaiseForm) {
+    var cur = getFloat('grcCurrentGPA', getFloat('ccurrentgrade', 88));
+    var target = getFloat('grcTargetGPA', getFloat('ctargetgrade', 85));
+    var weight = getFloat('grcCurrentCredit', getFloat('cweight', 40)) / 100;
+    if (weight <= 0) weight = 0.40;
+
+    var needed = (target - cur * (1 - weight)) / weight;
+    var statusMsg = '';
+    var statusColor = '#059669';
+
+    if (needed <= 100 && needed >= 0) {
+      statusMsg = 'You need to score at least <b>' + needed.toFixed(1) + '%</b> on the final exam to achieve <b>' + target + '%</b> in the course.';
+    } else if (needed > 100) {
+      statusColor = '#dc2626';
+      statusMsg = 'You need <b>' + needed.toFixed(1) + '%</b> on the final, which is above 100%. You will need extra credit to reach your target.';
+    } else {
+      statusMsg = 'Congratulations! You have already secured your target grade of <b>' + target + '%</b> (even with a 0% on the final).';
+    }
+
+    var c = getResultContainer();
+    c.innerHTML = '<div class="result-card">' +
+      '<h2 class="h2result">Final Exam Target Result</h2>' +
+      '<p class="verybigtext" style="color: ' + statusColor + ';">Grade Needed on Final: <b>' + needed.toFixed(1) + '%</b></p>' +
+      '<p style="font-size:14px;color:#334155;margin-bottom:14px;">' + statusMsg + '</p>' +
+      '<table class="cinfoT" width="100%">' +
+      '<tr><td class="cinfoHd" colspan="2">Calculation Breakdown</td></tr>' +
+      '<tr><td>Current Course Grade:</td><td align="right"><b>' + cur + '%</b></td></tr>' +
+      '<tr><td>Target Course Grade:</td><td align="right"><b>' + target + '%</b></td></tr>' +
+      '<tr><td>Final Exam Weight:</td><td align="right"><b>' + (weight * 100).toFixed(0) + '%</b></td></tr>' +
+      '<tr style="background:#f0fdf4;"><td><b>Score Required on Final:</b></td><td align="right" style="color:' + statusColor + ';font-size:16px;"><b>' + needed.toFixed(1) + '%</b></td></tr>' +
+      '</table>' +
+      '</div>';
+    c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return true;
+  }
+
+  // Course Grade from Assignments (Form 1)
+  var totalPoints = 0;
+  var totalWeight = 0;
+  var rows = [];
+
+  for (var i = 1; i <= 15; i++) {
+    var nameEl = document.querySelector('[name="d' + i + '"]');
+    var scoreEl = document.querySelector('[name="s' + i + '"]');
+    var letterEl = document.querySelector('[name="l' + i + '"]');
+    var weightEl = document.querySelector('[name="w' + i + '"]');
+
+    if (!scoreEl && !weightEl) continue;
+
+    var nameVal = (nameEl && nameEl.value.trim()) || ('Assignment ' + i);
+    var weightVal = weightEl ? parseFloat(weightEl.value) : NaN;
+    var rawScore = scoreEl ? scoreEl.value.trim() : '';
+    var rawLetter = letterEl ? letterEl.value.toLowerCase().trim() : '';
+
+    if (isNaN(weightVal) || weightVal <= 0) continue;
+
+    var numScore = NaN;
+    var displayScore = '';
+
+    if (rawScore !== '') {
+      var parsed = parseFloat(rawScore);
+      if (!isNaN(parsed)) {
+        numScore = parsed;
+        displayScore = parsed + '%';
+      } else {
+        var lower = rawScore.toLowerCase();
+        if (letterMap[lower]) {
+          numScore = letterMap[lower].pct;
+          displayScore = letterMap[lower].label + ' (' + numScore + '%)';
+        }
+      }
+    } else if (rawLetter && letterMap[rawLetter]) {
+      numScore = letterMap[rawLetter].pct;
+      displayScore = letterMap[rawLetter].label + ' (' + numScore + '%)';
+    }
+
+    if (!isNaN(numScore)) {
+      totalPoints += numScore * weightVal;
+      totalWeight += weightVal;
+      rows.push({ name: nameVal, score: displayScore, weight: weightVal + '%', points: (numScore * weightVal / 100).toFixed(2) });
+    }
+  }
+
+  if (totalWeight === 0) {
+    var curFallback = getFloat('grcCurrentGPA', getFloat('ccurrentgrade', 88));
+    var targetFallback = getFloat('grcTargetGPA', getFloat('ctargetgrade', 85));
+    var weightFallback = getFloat('grcCurrentCredit', getFloat('cweight', 40)) / 100;
+    if (weightFallback <= 0) weightFallback = 0.40;
+    var neededFallback = (targetFallback - curFallback * (1 - weightFallback)) / weightFallback;
+
+    var c = getResultContainer();
+    c.innerHTML = '<div class="result-card">' +
+      '<h2 class="h2result">Grade Planning Result</h2>' +
+      '<p class="verybigtext" style="color:' + (neededFallback <= 100 ? '#059669' : '#dc2626') + '">Needed on Final: <b>' + neededFallback.toFixed(1) + '%</b></p>' +
+      '<table class="cinfoT" width="100%">' +
+      '<tr><td>Current Grade:</td><td align="right"><b>' + curFallback + '%</b></td></tr>' +
+      '<tr><td>Target Class Grade:</td><td align="right"><b>' + targetFallback + '%</b></td></tr>' +
+      '<tr><td>Final Exam Weight:</td><td align="right"><b>' + (weightFallback * 100).toFixed(0) + '%</b></td></tr>' +
+      '<tr style="background:#f0fdf4;"><td><b>Score Required on Final:</b></td><td align="right"><b>' + neededFallback.toFixed(1) + '%</b></td></tr>' +
+      '</table>' +
+      '</div>';
+    c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return true;
+  }
+
+  var weightedAvg = totalPoints / totalWeight;
+  var gradeInfo = getGradeInfo(weightedAvg);
+  var remainingWeight = Math.max(0, 100 - totalWeight);
+
+  var planHtml = '';
+  if (remainingWeight > 0) {
+    var targets = [
+      { letter: 'A (93%)', target: 93 },
+      { letter: 'B (83%)', target: 83 },
+      { letter: 'C (73%)', target: 73 },
+      { letter: 'D (63%)', target: 63 }
+    ];
+    var planRows = targets.map(function (t) {
+      var req = (t.target * 100 - totalPoints) / remainingWeight;
+      var reqStr = req <= 100 && req >= 0 ? req.toFixed(1) + '%' : (req > 100 ? req.toFixed(1) + '% (Extra credit required)' : 'Already achieved (0%)');
+      return '<tr><td><b>' + t.letter + '</b></td><td align="right">' + reqStr + '</td></tr>';
+    }).join('');
+
+    planHtml = '<h3 style="margin-top:18px;margin-bottom:8px;font-size:16px;">Target Grade Planning (Remaining ' + remainingWeight.toFixed(0) + '% of Course)</h3>' +
+      '<table class="cinfoT" width="100%">' +
+      '<tr><td class="cinfoHd">Target Course Grade</td><td class="cinfoHdL" align="right">Average Needed on Remaining Work</td></tr>' +
+      planRows +
+      '</table>';
+  }
+
+  var rowsHtml = rows.map(function (r) {
+    return '<tr><td>' + r.name + '</td><td align="center">' + r.score + '</td><td align="center">' + r.weight + '</td><td align="right">' + r.points + '</td></tr>';
+  }).join('');
 
   var c = getResultContainer();
-  c.innerHTML = `
-    <h2 class="h2result">Grade Result</h2>
-    <p class="verybigtext">Needed on Final: <font color="${needed <= 100 ? 'green' : 'red'}"><b>${needed.toFixed(1)}%</b></font></p>
-    <table class="cinfoT" width="100%">
-      <tr><td>Current Grade:</td><td align="right">${curGrade}%</td></tr>
-      <tr><td>Target Class Grade:</td><td align="right">${targetGrade}%</td></tr>
-      <tr><td>Final Exam Weight:</td><td align="right">${(finalWeight * 100)}%</td></tr>
-      <tr style="background:#eaf2e8;"><td><b>Grade Required:</b></td><td align="right"><b>${needed.toFixed(1)}%</b></td></tr>
-    </table>
-  `;
+  c.innerHTML = '<div class="result-card">' +
+    '<h2 class="h2result">Current Grade Result</h2>' +
+    '<p class="verybigtext" style="color:#059669;margin-bottom:4px;">Weighted Grade: <b>' + weightedAvg.toFixed(2) + '%</b></p>' +
+    '<p style="font-size:16px;color:#334155;margin-bottom:14px;">Letter Grade: <b>' + gradeInfo.letter + '</b> &nbsp;&bull;&nbsp; GPA Equivalent: <b>' + gradeInfo.gpa + '</b></p>' +
+    '<table class="cinfoT" width="100%">' +
+    '<tr><td class="cinfoHd">Assignment</td><td class="cinfoHdL" align="center">Grade</td><td class="cinfoHdL" align="center">Weight</td><td class="cinfoHdL" align="right">Points</td></tr>' +
+    rowsHtml +
+    '<tr style="background:#f1f5f9;font-weight:700;"><td>Total Evaluated</td><td align="center">-</td><td align="center">' + totalWeight + '%</td><td align="right">' + (totalPoints / 100).toFixed(2) + '</td></tr>' +
+    '</table>' +
+    planHtml +
+    '</div>';
+  c.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   return true;
 };
 
