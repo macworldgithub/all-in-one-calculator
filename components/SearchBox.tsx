@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import searchIndex from "@/data/search-index.json";
+import { SearchIcon, CloseIcon } from "./Icons";
 
 interface SearchItem {
   name: string;
@@ -49,44 +50,35 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
         position: "relative",
         textAlign: alignCenter ? "center" : "left",
         width: "100%",
-        maxWidth: "460px",
+        maxWidth: "480px",
         margin: alignCenter ? "0 auto" : "0",
       }}
     >
       <form
         name="calcSearchForm"
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (results.length > 0) {
+            window.location.href = results[0].url;
+          }
+        }}
         autoComplete="off"
       >
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            background: "#ffffff",
-            border: isFocused ? "1.5px solid #2563eb" : "1.5px solid #cbd5e1",
+            background: "var(--bg-card)",
+            border: isFocused ? "1.5px solid var(--color-primary)" : "1.5px solid var(--border-subtle)",
             borderRadius: "12px",
             boxShadow: isFocused
-              ? "0 0 0 4px rgba(37, 99, 235, 0.12)"
-              : "0 2px 4px rgba(0, 0, 0, 0.04)",
+              ? "0 0 0 4px var(--color-primary-light)"
+              : "var(--shadow-xs)",
             padding: "4px 6px 4px 14px",
             transition: "all 0.15s ease",
           }}
         >
-          {/* Search Icon */}
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#64748b"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ flexShrink: 0, marginRight: "8px" }}
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <SearchIcon size={18} color="var(--text-muted)" className="flex-shrink-0" />
 
           <input
             type="text"
@@ -101,8 +93,8 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
               border: "none",
               outline: "none",
               fontSize: "14px",
-              padding: "8px 4px",
-              color: "#0f172a",
+              padding: "8px 8px",
+              color: "var(--text-primary)",
               background: "transparent",
             }}
           />
@@ -117,15 +109,16 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
               style={{
                 border: "none",
                 background: "transparent",
-                color: "#94a3b8",
+                color: "var(--text-muted)",
                 cursor: "pointer",
                 padding: "4px",
                 marginRight: "4px",
                 display: "flex",
                 alignItems: "center",
               }}
+              aria-label="Clear search"
             >
-              ✕
+              <CloseIcon size={15} />
             </button>
           )}
 
@@ -133,7 +126,7 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
             type="submit"
             id="bluebtn"
             style={{
-              background: "#2563eb",
+              background: "var(--color-primary)",
               color: "#ffffff",
               border: "none",
               borderRadius: "8px",
@@ -149,7 +142,7 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
           </button>
         </div>
 
-        {/* Autocomplete Results Card */}
+        {/* Autocomplete Results Dropdown */}
         {isOpen && (
           <div
             id="calcSearchOut"
@@ -158,11 +151,11 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
               top: "calc(100% + 6px)",
               left: 0,
               right: 0,
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
+              background: "var(--bg-card)",
+              border: "1px solid var(--border-subtle)",
               borderRadius: "12px",
               zIndex: 100,
-              boxShadow: "0 10px 25px -5px rgba(15, 23, 42, 0.15)",
+              boxShadow: "var(--shadow-lg)",
               textAlign: "left",
               overflow: "hidden",
             }}
@@ -178,100 +171,49 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
                     justifyContent: "space-between",
                     alignItems: "center",
                     padding: "10px 14px",
-                    borderBottom: "1px solid #f1f5f9",
-                    color: "#0f172a",
+                    borderBottom: "1px solid var(--border-subtle)",
                     textDecoration: "none",
-                    fontSize: "14px",
-                    fontWeight: 500,
+                    color: "var(--text-primary)",
+                    fontSize: "13.5px",
                     transition: "background 0.1s ease",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#f8fafc")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.backgroundColor = "#ffffff")
-                  }
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--bg-card-subtle)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                  }}
                 >
-                  <span>{r.name}</span>
-                  {r.category && (
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        color: "#64748b",
-                        background: "#f1f5f9",
-                        padding: "2px 8px",
-                        borderRadius: "12px",
-                        textTransform: "capitalize",
-                      }}
-                    >
-                      {r.category}
-                    </span>
-                  )}
+                  <span style={{ fontWeight: 600 }}>{r.name}</span>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--text-muted)",
+                      textTransform: "capitalize",
+                      background: "var(--bg-card-subtle)",
+                      padding: "2px 8px",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    {r.category?.replace(/-/g, " ") || "calculator"}
+                  </span>
                 </Link>
               ))
             ) : (
               <div
                 style={{
-                  padding: "14px",
+                  padding: "16px",
                   fontSize: "13px",
-                  color: "#64748b",
+                  color: "var(--text-muted)",
                   textAlign: "center",
                 }}
               >
-                No calculator matches &ldquo;{query}&rdquo;.
+                No calculators match &quot;{query}&quot;
               </div>
             )}
           </div>
         )}
       </form>
-
-      {/* Popular Chips */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "6px",
-          marginTop: "12px",
-          alignItems: "center",
-        }}
-      >
-        <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>
-          Popular:
-        </span>
-        {[
-          { label: "Mortgage", url: "/mortgage-calculator" },
-          { label: "401(k)", url: "/401k-calculator" },
-          { label: "BMI", url: "/bmi-calculator" },
-          { label: "Loan", url: "/loan-calculator" },
-          { label: "Age", url: "/age-calculator" },
-          { label: "Percentage", url: "/percent-calculator" },
-        ].map((chip) => (
-          <Link
-            key={chip.url}
-            href={chip.url}
-            style={{
-              fontSize: "12px",
-              color: "#334155",
-              background: "#f1f5f9",
-              padding: "3px 9px",
-              borderRadius: "14px",
-              textDecoration: "none",
-              border: "1px solid #e2e8f0",
-              transition: "all 0.15s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#2563eb";
-              e.currentTarget.style.borderColor = "#bfdbfe";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = "#334155";
-              e.currentTarget.style.borderColor = "#e2e8f0";
-            }}
-          >
-            {chip.label}
-          </Link>
-        ))}
-      </div>
     </div>
   );
 }

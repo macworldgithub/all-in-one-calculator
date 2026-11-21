@@ -390,3 +390,45 @@
     gap: 10px;
   }
 }
+
+/* Dark Mode Support for Scientific Calculator */
+html.dark .modern-calc-card,
+html.dark #sciout {
+  background: #151e32 !important;
+  border-color: #29354d !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4) !important;
+}
+html.dark .calc-mode-group,
+html.dark .calc-tab-group {
+  background: #1e293b !important;
+}
+html.dark .calc-mode-btn,
+html.dark .calc-tab-btn {
+  color: #94a3b8 !important;
+}
+html.dark .calc-mode-btn.active,
+html.dark .calc-tab-btn.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+html.dark .btn-num,
+html.dark .scinm {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+html.dark .btn-fx,
+html.dark .scifunc {
+  background: #192339 !important;
+  color: #cbd5e1 !important;
+  border-color: #29354d !important;
+}
+html.dark .scird {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+html.dark .calc-history-drawer {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}

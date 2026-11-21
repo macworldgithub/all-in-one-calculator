@@ -1,0 +1,24 @@
+{
+  "name": "All-in-one-calculator",
+  "short_name": "Calculator",
+  "description": "Fast, accurate, and comprehensive online calculators for finance, health, fitness, math, and everyday tools.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

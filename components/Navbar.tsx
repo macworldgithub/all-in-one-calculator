@@ -4,7 +4,16 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { FinancialIcon, FitnessIcon, MathIcon, EverydayIcon } from "./Icons";
+import {
+  FinancialIcon,
+  FitnessIcon,
+  MathIcon,
+  EverydayIcon,
+  SearchIcon,
+  HistoryIcon,
+  CloseIcon,
+} from "./Icons";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -42,8 +51,17 @@ export default function Navbar() {
     { label: "BMI Calculator", href: "/bmi-calculator" },
     { label: "Age Calculator", href: "/age-calculator" },
     { label: "Scientific Calculator", href: "/scientific-calculator" },
-    { label: "Percentage Calculator", href: "/percentage-calculator" },
+    { label: "Percentage Calculator", href: "/percent-calculator" },
+    { label: "Grade Calculator", href: "/grade-calculator" },
   ];
+
+  const openSearch = () => {
+    window.dispatchEvent(new CustomEvent("open-command-palette"));
+  };
+
+  const openDrawer = (tab: "history" | "favorites" = "history") => {
+    window.dispatchEvent(new CustomEvent("open-calc-drawer", { detail: { tab } }));
+  };
 
   return (
     <header className="site-header">
@@ -59,7 +77,7 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Nav Pills */}
         <nav className="desktop-nav" aria-label="Main Navigation">
           {navLinks.map((link) => {
             const isActive = pathname.startsWith(link.href);
@@ -76,11 +94,40 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Right Action buttons */}
+        {/* Action buttons: Search, History, Theme, About */}
         <div className="header-actions">
+          {/* Quick Search Button (opens Ctrl+K command palette) */}
+          <button
+            type="button"
+            className="header-icon-btn header-search-trigger"
+            onClick={openSearch}
+            title="Search Calculators (Ctrl+K)"
+            aria-label="Search all calculators"
+          >
+            <SearchIcon size={17} />
+            <span className="header-search-text">Search</span>
+            <kbd className="header-search-kbd">⌘K</kbd>
+          </button>
+
+          {/* Activity / History Drawer Button */}
+          <button
+            type="button"
+            className="header-icon-btn"
+            onClick={() => openDrawer("history")}
+            title="Recent Calculations & Favorites"
+            aria-label="Open recent calculations"
+          >
+            <HistoryIcon size={17} />
+          </button>
+
+          {/* Theme Toggle (Light / Dark / Auto) */}
+          <ThemeToggle />
+
           <Link href="/about-us" className="header-about-link">
             About
           </Link>
+
+          {/* Mobile Hamburger Toggle */}
           <button
             type="button"
             className="mobile-hamburger-btn"
@@ -103,14 +150,40 @@ export default function Navbar() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mobile-drawer-header">
-              <span className="mobile-drawer-title">Browse Categories</span>
+              <span className="mobile-drawer-title">All-in-one-calculator</span>
               <button
                 type="button"
                 className="mobile-drawer-close"
                 onClick={() => setMobileMenuOpen(false)}
                 aria-label="Close menu"
               >
-                ✕
+                <CloseIcon size={18} />
+              </button>
+            </div>
+
+            {/* Mobile Quick Action Buttons (Search & History) */}
+            <div className="mobile-action-bar">
+              <button
+                type="button"
+                className="mobile-action-btn"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openSearch();
+                }}
+              >
+                <SearchIcon size={16} />
+                <span>Quick Search (⌘K)</span>
+              </button>
+              <button
+                type="button"
+                className="mobile-action-btn"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openDrawer("history");
+                }}
+              >
+                <HistoryIcon size={16} />
+                <span>Recent History</span>
               </button>
             </div>
 
