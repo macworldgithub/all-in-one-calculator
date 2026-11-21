@@ -1631,21 +1631,25 @@ table.cinfoT td {
   line-height: 1.6;
   margin: 0;
 }
-.footer-badge-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.footer-badges {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-top: 16px !important;
 }
 .footer-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: #f1f5f9;
-  padding: 4px 9px;
-  border-radius: 6px;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  padding: 6px 12px !important;
+  border-radius: var(--radius-sm) !important;
+  transition: all 0.15s ease !important;
+  border: 1px solid var(--border-subtle) !important;
+  background: var(--bg-card-subtle) !important;
+  color: var(--text-secondary) !important;
 }
 
 .footer-col h4, .footer-heading {
@@ -1948,26 +1952,7 @@ table.cinfoT td {
     margin-bottom: 4px !important;
   }
 
-  /* Sub-tables inside a cell (like feet + inches) flex side-by-side */
-  .panel td table:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(.cinfoT) {
-    display: table !important;
-    width: 100% !important;
-  }
-  .panel td table:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(.cinfoT) tbody,
-  .panel td table:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(.cinfoT) tr {
-    display: flex !important;
-    flex-direction: row !important;
-    width: 100% !important;
-    gap: 8px !important;
-    align-items: center !important;
-    margin-bottom: 0 !important;
-  }
-  .panel td table:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(.cinfoT) td {
-    flex: 1 1 0% !important;
-    width: auto !important;
-    padding: 0 !important;
-    display: block !important;
-  }
+  /* Nested form tables responsive layout */
 
   /* All form inputs stretch full width of their container */
   .panel input[type="text"],
@@ -3437,5 +3422,535 @@ select,
   .panel input[type="submit"], .panel input[type="button"] {
     width: 100% !important;
     min-height: 44px !important;
+  }
+}
+
+/* Brand Logo Vector Color Themes */
+html.dark .brand-logo-text,
+[data-theme="dark"] .brand-logo-text {
+  fill: #f8fafc !important;
+}
+html.light .brand-logo-text,
+[data-theme="light"] .brand-logo-text {
+  fill: #0f172a !important;
+}
+
+/* ==========================================================================
+   COMPLETE BLACK THEME (DARK) & PURE WHITE THEME (LIGHT) ARCHITECTURE
+   Guarantees 100% black header/footer/cards in dark mode, and
+   100% pure white header/footer/cards in light mode.
+   ========================================================================== */
+
+/* --- DARK MODE (Black Theme) --- */
+html.dark,
+[data-theme="dark"] {
+  --bg-page: #060911;
+  --bg-card: #0f172a;
+  --bg-card-subtle: #151f33;
+  --border-subtle: #1e293b;
+  --border-focus: #3b82f6;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #60a5fa;
+  --color-primary-light: rgba(59, 130, 246, 0.15);
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.12);
+  --color-success-border: rgba(16, 185, 129, 0.28);
+}
+
+html.dark body,
+[data-theme="dark"] body {
+  background-color: #060911 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .site-header,
+[data-theme="dark"] .site-header {
+  background: rgba(10, 15, 26, 0.95) !important;
+  border-bottom: 1px solid #1e293b !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .site-footer,
+[data-theme="dark"] .site-footer {
+  background: #070c18 !important;
+  border-top: 1px solid #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+html.dark .header-icon-btn,
+html.dark .theme-toggle-btn,
+html.dark .mobile-hamburger-btn,
+html.dark .header-about-link {
+  background: #111a2e !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+}
+html.dark .header-icon-btn:hover,
+html.dark .theme-toggle-btn:hover,
+html.dark .mobile-hamburger-btn:hover,
+html.dark .header-about-link:hover {
+  background: #19253d !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+html.dark .footer-badge {
+  background: #111a2e !important;
+  border: 1px solid #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark .mobile-drawer-content {
+  background: #0f172a !important;
+  border-left: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+}
+html.dark .mobile-action-btn,
+html.dark .mobile-theme-bar {
+  background: #151f33 !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+}
+html.dark .mobile-theme-btn {
+  background: #0f172a !important;
+  border: 1px solid #1e293b !important;
+  color: #94a3b8 !important;
+}
+html.dark .mobile-theme-btn.active {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+}
+html.dark .mobile-category-card {
+  background: #151f33 !important;
+  border: 1px solid #1e293b !important;
+  color: #f8fafc !important;
+}
+html.dark .mobile-quick-chip {
+  background: #151f33 !important;
+  border: 1px solid #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+/* --- LIGHT MODE (Pure White Theme) --- */
+html.light,
+[data-theme="light"] {
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --border-focus: #2563eb;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #eff6ff;
+  --color-success: #059669;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #bbf7d0;
+}
+
+html.light body,
+[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Pure white site header in light mode */
+html.light .site-header,
+[data-theme="light"] .site-header {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+/* Pure white site footer in light mode */
+html.light .site-footer,
+[data-theme="light"] .site-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+html.light .footer-col h4,
+html.light .footer-heading {
+  color: #0f172a !important;
+}
+html.light .footer-links a {
+  color: #475569 !important;
+}
+html.light .footer-links a:hover {
+  color: #2563eb !important;
+}
+html.light .footer-tagline {
+  color: #64748b !important;
+}
+html.light .footer-bottom {
+  border-top: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Light buttons in navbar */
+html.light .header-icon-btn,
+html.light .theme-toggle-btn,
+html.light .mobile-hamburger-btn,
+html.light .header-about-link {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+html.light .header-icon-btn:hover,
+html.light .theme-toggle-btn:hover,
+html.light .mobile-hamburger-btn:hover,
+html.light .header-about-link:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+html.light .hamburger-bar {
+  background-color: #0f172a !important;
+}
+html.light .nav-pill {
+  color: #475569 !important;
+}
+html.light .nav-pill:hover {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+}
+html.light .nav-pill.active {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+/* Light footer badges */
+html.light .footer-badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* Light mobile drawer */
+html.light .mobile-drawer-content,
+[data-theme="light"] .mobile-drawer-content {
+  background: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+html.light .mobile-drawer-close {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+html.light .mobile-action-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+html.light .mobile-action-btn:hover {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  color: #2563eb !important;
+}
+html.light .mobile-theme-bar {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+html.light .mobile-theme-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+html.light .mobile-theme-btn.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+html.light .mobile-category-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+html.light .mobile-cat-icon {
+  background: #f1f5f9 !important;
+}
+html.light .mobile-quick-chip {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+/* Light cards, hero & panels */
+html.light .hero-section {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+html.light .hero-calculator,
+html.light .category-deck-card,
+html.light .popular-bar-section,
+html.light .hub-calc-card,
+html.light .panel,
+html.light #content .panel,
+html.light .cpanel,
+html.light .sidebar-card,
+html.light .modern-article-card,
+html.light .sitemap-cat-card,
+html.light .cmd-palette-modal,
+html.light .drawer-panel {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+html.light .popular-chip {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* Light form inputs */
+html.light input[type="text"],
+html.light input[type="number"],
+html.light input[type="date"],
+html.light select,
+html.light textarea,
+html.light .intext,
+html.light .innormal,
+html.light .inlong,
+html.light .inlonger,
+html.light .inlongest,
+html.light .inhalf {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+html.light input[type="text"]:focus,
+html.light input[type="number"]:focus,
+html.light select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+html.light .panel td,
+html.light .panel th,
+html.light .panel label,
+html.light .panel p {
+  color: #0f172a !important;
+}
+html.light table.cinfoT {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+html.light table.cinfoT td.cinfoHd,
+html.light table.cinfoT td.cinfoHdL,
+html.light table.cinfoT th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+html.light table.cinfoT td {
+  color: #334155 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+html.light table.cinfoT tr:nth-child(even) td {
+  background: #f8fafc !important;
+}
+html.light .calc-result-toolbar {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+html.light .crt-btn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+html.light .calc-donut-center {
+  background: #ffffff !important;
+}
+html.light .macro-carb {
+  background: #059669 !important;
+}
+
+/* ==========================================================================
+   FORM TABLES & MORTGAGE/FINANCE CALCULATORS MOBILE OPTIMIZATION
+   Fixes narrow vertical text in options tables (#cmoreoptioninputs, #ctaxcost)
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Prevent horizontal blowout */
+  .panel,
+  #content .panel,
+  .cpanel {
+    overflow-x: hidden !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 16px 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .panel form,
+  #content form {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Main form table */
+  .panel > form > table,
+  .panel > table,
+  #content table:not(.cinfoT) {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  /* All nested tables inside cells (options, tax rates, extra payments) */
+  .panel td table,
+  #content td table,
+  #cmoreoptioninputs,
+  #ctaxcost,
+  #cadditionalonetimediv table {
+    display: table !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 8px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .panel td table tbody,
+  #content td table tbody,
+  #cmoreoptioninputs tbody,
+  #ctaxcost tbody {
+    display: table-row-group !important;
+    width: 100% !important;
+  }
+
+  .panel td table tr,
+  #content td table tr,
+  #cmoreoptioninputs tr,
+  #ctaxcost tr {
+    display: table-row !important;
+    width: 100% !important;
+  }
+
+  .panel td table td,
+  #content td table td,
+  #cmoreoptioninputs td,
+  #ctaxcost td {
+    display: table-cell !important;
+    padding: 6px 4px !important;
+    vertical-align: middle !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    font-size: 13.5px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Header rows inside nested option tables */
+  #cmoreoptioninputs td[colspan],
+  #ctaxcost td[colspan],
+  .panel td table td[colspan] {
+    display: table-cell !important;
+    font-weight: 700 !important;
+    font-size: 14.5px !important;
+    padding: 12px 4px 6px !important;
+    color: var(--text-primary) !important;
+    text-align: left !important;
+  }
+
+  /* Standard 2-column key-value rows in main calculator forms */
+  .panel > form > table > tbody > tr > td:first-child,
+  .panel > table > tbody > tr > td:first-child {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    padding: 8px 6px 8px 0 !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    vertical-align: middle !important;
+  }
+
+  .panel > form > table > tbody > tr > td:nth-child(2),
+  .panel > table > tbody > tr > td:nth-child(2) {
+    padding: 8px 0 8px 6px !important;
+    vertical-align: middle !important;
+  }
+
+  /* Inputs inside tables */
+  .panel input[type="text"],
+  .panel input[type="number"],
+  .panel select,
+  .inhalf,
+  .innormal,
+  .inlong,
+  .inlonger,
+  .inlongest {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 40px !important;
+    box-sizing: border-box !important;
+    font-size: 15px !important;
+  }
+
+  .in4char {
+    width: 70px !important;
+    min-height: 40px !important;
+    display: inline-block !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Submit button & clear button on forms */
+  .panel input[type="submit"],
+  .panel input[type="button"],
+  .panel button[type="submit"] {
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    margin: 12px 0 6px !important;
+    border-radius: var(--radius-sm) !important;
+    display: block !important;
+    cursor: pointer !important;
+  }
+  .panel input[value="Clear"],
+  .panel input[value="clear"],
+  .panel input[type="reset"] {
+    width: 100% !important;
+    min-height: 44px !important;
+    font-size: 15px !important;
+    margin: 6px 0 !important;
+    display: block !important;
+    cursor: pointer !important;
+  }
+
+  /* Tooltip images */
+  .ttimg {
+    vertical-align: middle !important;
+    margin-left: 4px !important;
+    display: inline-block !important;
+  }
+
+  /* Ensure wide amortization schedules scroll smoothly */
+  .cinfo, table.cinfoT {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .panel, #content .panel, .cpanel {
+    padding: 14px 10px !important;
+  }
+  .panel td table td,
+  #cmoreoptioninputs td,
+  #ctaxcost td {
+    font-size: 13px !important;
+    padding: 5px 3px !important;
   }
 }
