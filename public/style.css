@@ -3128,3 +3128,59 @@ html.dark .hub-calc-title {
 html.dark .hub-calc-desc {
   color: var(--text-muted) !important;
 }
+
+/* Sitemap & Article Dark Mode Overrides */
+html.dark .sitemap-cat-card,
+html.dark .modern-article-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border-subtle) !important;
+}
+html.dark .sitemap-cat-icon {
+  background: var(--bg-card-subtle) !important;
+  border-color: var(--border-subtle) !important;
+}
+html.dark .sitemap-link {
+  color: var(--text-secondary) !important;
+}
+html.dark .sitemap-link:hover {
+  background: var(--bg-card-subtle) !important;
+  color: var(--color-primary) !important;
+}
+
+/* ==========================================================================
+   CROSS-DEVICE & IOS SAFARI RESPONSIVE POLISH
+   ========================================================================== */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari smooth momentum scrolling */
+  .cmd-results-list,
+  .drawer-body,
+  .calc-history-drawer,
+  .cinfo,
+  table.cinfoT {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Safe area padding for iPhone X/11/12/13/14/15/16 notch & home bar */
+  .drawer-panel {
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  .mobile-drawer-content {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+  }
+  .site-footer {
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Touch action manipulation prevents double-tap zoom delay */
+button,
+a,
+input,
+select,
+.calc-btn,
+.crt-btn,
+.nav-pill,
+.header-icon-btn,
+.theme-toggle-btn {
+  touch-action: manipulation;
+}

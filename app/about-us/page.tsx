@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
+import { SparklesIcon } from "@/components/Icons";
 
 export const metadata = {
   title: "About Us - All-in-one-calculator",
@@ -19,7 +20,10 @@ export default function AboutUsPage() {
           </nav>
 
           <header className="hub-header">
-            <div className="hub-badge">ℹ️ About All-in-one-calculator</div>
+            <div className="hub-badge">
+              <SparklesIcon size={14} color="var(--color-primary)" />
+              <span>About All-in-one-calculator</span>
+            </div>
             <h1 className="hub-title">About All-in-one-calculator</h1>
             <p className="hub-subtitle">
               We provide fast, comprehensive, convenient, and 100% free online calculators in finance, health, fitness, math, and everyday tools.

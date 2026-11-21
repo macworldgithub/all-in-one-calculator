@@ -446,27 +446,40 @@
     return title.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   }
 
-  function runCalculator() {
+  function runCalculator(isLive) {
     var slug = getPageSlug();
+    var handled = false;
     var fn = engines[slug];
     if (typeof fn === 'function') {
       try {
         fn();
-        return true;
+        handled = true;
       } catch (err) {
         console.error('Engine error in ' + slug, err);
       }
     }
-    // Category prefix or keyword matching
-    for (var key in engines) {
-      if (slug.indexOf(key) !== -1 || key.indexOf(slug) !== -1) {
-        try {
-          engines[key]();
-          return true;
-        } catch (err) {}
+    if (!handled) {
+      for (var key in engines) {
+        if (slug.indexOf(key) !== -1 || key.indexOf(slug) !== -1) {
+          try {
+            engines[key]();
+            handled = true;
+            break;
+          } catch (err) {}
+        }
       }
     }
-    return calcGenericFallback();
+    if (!handled) {
+      handled = calcGenericFallback();
+    }
+    if (handled) {
+      try {
+        postProcessResult(slug, isLive);
+      } catch (e) {
+        console.error('postProcessResult error:', e);
+      }
+    }
+    return handled;
   }
 
   
@@ -4465,5 +4478,342 @@ if (typeof document !== 'undefined') {
       window.addEventListener('DOMContentLoaded', populateFromUrlAndRun);
     }
     window.addEventListener('load', populateFromUrlAndRun);
+
+    /* ==========================================================================
+       ALL-IN-ONE-CALCULATOR: ACTIONS, CHARTS, HISTORY & LIVE ENGINES
+       ========================================================================== */
+
+    function isCalculatorFavorited(slug) {
+      try {
+        var favs = JSON.parse(localStorage.getItem('allinone_calc_favorites') || '[]');
+        return favs.some(function (f) { return f.slug === slug; });
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function postProcessResult(slug, isLive) {
+      var res = document.getElementById('dynResultDiv') ||
+                document.querySelector('.result-card') ||
+                document.querySelector('#coutput') ||
+                document.querySelector('.rightresult') ||
+                document.getElementById('caloutput');
+      if (!res || typeof res.querySelector !== 'function') return;
+
+      var rawTitle = (typeof document !== 'undefined' && document.title) ? document.title : '';
+      var title = rawTitle ? rawTitle.split('-')[0].split('|')[0].trim() : (slug ? slug.replace(/-/g, ' ') : 'Calculator');
+
+      // 1. Extract Summary Text
+      var mainHeading = res.querySelector('.h2result, h2, h3');
+      var bigVal = res.querySelector('.verybigtext, .bigtext, b');
+      var resultText = '';
+      if (bigVal) {
+        resultText = bigVal.innerText.trim();
+      } else if (mainHeading) {
+        resultText = mainHeading.innerText.trim();
+      } else {
+        resultText = 'Calculation Complete';
+      }
+
+      // 2. Result Actions Toolbar
+      if (!res.querySelector('.calc-result-toolbar')) {
+        var isFav = isCalculatorFavorited(slug);
+        var toolbar = document.createElement('div');
+        toolbar.className = 'calc-result-toolbar';
+        toolbar.innerHTML =
+          '<div class="crt-group">' +
+            '<button type="button" class="crt-btn crt-copy" onclick="window.copyCalcResult(this)" title="Copy Result to Clipboard">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>' +
+              '<span>Copy Result</span>' +
+            '</button>' +
+            '<button type="button" class="crt-btn crt-share" onclick="window.shareCalcLink(this)" title="Copy Shareable Link with Values">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>' +
+              '<span>Share Link</span>' +
+            '</button>' +
+            '<button type="button" class="crt-btn crt-print" onclick="window.printCalcReport()" title="Print Clean Report / PDF">' +
+              '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>' +
+              '<span>Print / PDF</span>' +
+            '</button>' +
+          '</div>' +
+          '<button type="button" class="crt-btn crt-fav ' + (isFav ? 'active' : '') + '" onclick="window.toggleCalcFavorite(this, \'' + slug + '\', \'' + title.replace(/'/g, "\\'") + '\')" title="Favorite this tool">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (isFav ? '#eab308' : 'none') + '" stroke="' + (isFav ? '#eab308' : 'currentColor') + '" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
+            '<span>' + (isFav ? 'Starred' : 'Favorite') + '</span>' +
+          '</button>';
+        res.appendChild(toolbar);
+      }
+
+      // 3. Dynamic Visual Charts
+      renderVisualCharts(slug, res);
+
+      // 4. Save to Persistent History in localStorage
+      if (!isLive) {
+        saveCalculationHistory(slug, title, resultText);
+      }
+    }
+
+    function renderVisualCharts(slug, res) {
+      if (res.querySelector('.calc-chart-container')) return;
+
+      // Mortgage / Loan Donut Chart
+      if (slug === 'mortgage-calculator' || slug === 'loan-calculator' || slug === 'auto-loan-calculator') {
+        var principal = 0;
+        var totalInterest = 0;
+        var table = res.querySelector('.cinfoT');
+        if (table) {
+          var rows = table.querySelectorAll('tr');
+          rows.forEach(function (tr) {
+            var text = tr.innerText;
+            var match = text.match(/\$([0-9,]+(?:\.[0-9]+)?)/);
+            if (match) {
+              var val = parseFloat(match[1].replace(/,/g, ''));
+              if (/loan amount|principal/i.test(text) && !principal) principal = val;
+              if (/total interest/i.test(text) && !totalInterest) totalInterest = val;
+            }
+          });
+        }
+        if (!principal) principal = getFloat('camount', getFloat('cloanamount', 300000));
+        if (!totalInterest) totalInterest = principal * 0.45;
+
+        var total = principal + totalInterest;
+        if (total > 0) {
+          var pPct = Math.round((principal / total) * 100);
+          var iPct = 100 - pPct;
+          var circ = 2 * Math.PI * 45;
+          var pDash = (pPct / 100) * circ;
+          var iDash = circ - pDash;
+
+          var chartBox = document.createElement('div');
+          chartBox.className = 'calc-chart-container';
+          chartBox.innerHTML =
+            '<h3 class="calc-chart-title">Payment Breakdown (Principal vs. Interest)</h3>' +
+            '<div class="calc-donut-wrap">' +
+              '<svg class="calc-donut-svg" viewBox="0 0 120 120">' +
+                '<circle cx="60" cy="60" r="45" fill="none" stroke="#e2e8f0" stroke-width="16" />' +
+                '<circle cx="60" cy="60" r="45" fill="none" stroke="#2563eb" stroke-width="16" stroke-dasharray="' + pDash + ' ' + (circ - pDash) + '" stroke-dashoffset="0" transform="rotate(-90 60 60)" />' +
+                '<circle cx="60" cy="60" r="45" fill="none" stroke="#7c3aed" stroke-width="16" stroke-dasharray="' + iDash + ' ' + (circ - iDash) + '" stroke-dashoffset="-' + pDash + '" transform="rotate(-90 60 60)" />' +
+                '<text x="60" y="58" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-primary)">Total</text>' +
+                '<text x="60" y="72" text-anchor="middle" font-size="9" fill="var(--text-muted)">$' + Math.round(total).toLocaleString() + '</text>' +
+              '</svg>' +
+              '<div class="calc-donut-legend">' +
+                '<div class="legend-row"><span class="legend-dot" style="background:#2563eb;"></span><span class="legend-label">Principal:</span> <span class="legend-val">$' + Math.round(principal).toLocaleString() + ' (' + pPct + '%)</span></div>' +
+                '<div class="legend-row"><span class="legend-dot" style="background:#7c3aed;"></span><span class="legend-label">Interest:</span> <span class="legend-val">$' + Math.round(totalInterest).toLocaleString() + ' (' + iPct + '%)</span></div>' +
+              '</div>' +
+            '</div>';
+          res.appendChild(chartBox);
+        }
+      }
+
+      // BMI Visual Category Gauge
+      if (slug === 'bmi-calculator') {
+        var bmiText = res.innerText.match(/BMI\s*=\s*([0-9]+(?:\.[0-9]+)?)/i) ||
+                      res.innerText.match(/([0-9]{2}\.[0-9])/);
+        var bmi = bmiText ? parseFloat(bmiText[1]) : 22.5;
+        if (!isNaN(bmi)) {
+          var clamped = Math.max(15, Math.min(35, bmi));
+          var markerPos = ((clamped - 15) / 20) * 100;
+
+          var chartBox = document.createElement('div');
+          chartBox.className = 'calc-chart-container';
+          chartBox.innerHTML =
+            '<h3 class="calc-chart-title">BMI Category Spectrum</h3>' +
+            '<div class="calc-gauge-wrap">' +
+              '<div class="calc-gauge-bar">' +
+                '<div class="gauge-sec sec-blue" style="width:17.5%;" title="Underweight (&lt;18.5)">Under</div>' +
+                '<div class="gauge-sec sec-green" style="width:32%;" title="Normal (18.5 - 24.9)">Normal</div>' +
+                '<div class="gauge-sec sec-yellow" style="width:25%;" title="Overweight (25 - 29.9)">Over</div>' +
+                '<div class="gauge-sec sec-red" style="width:25.5%;" title="Obese (30+)">Obese</div>' +
+                '<div class="gauge-marker" style="left:' + markerPos + '%;">' +
+                  '<span class="marker-tag">' + bmi.toFixed(1) + '</span>' +
+                  '<span class="marker-arrow"></span>' +
+                '</div>' +
+              '</div>' +
+              '<div class="calc-gauge-ticks">' +
+                '<span>15</span><span>18.5</span><span>25.0</span><span>30.0</span><span>35+</span>' +
+              '</div>' +
+            '</div>';
+          res.appendChild(chartBox);
+        }
+      }
+
+      // Calorie Macro Distribution Bar
+      if (slug === 'calorie-calculator') {
+        var calMatch = res.innerText.match(/([0-9,]{3,5})\s*Calories/i) || res.innerText.match(/([0-9,]{4})/);
+        var cal = calMatch ? parseInt(calMatch[1].replace(/,/g, ''), 10) : 2000;
+        if (cal >= 1000 && cal <= 6000) {
+          var proteinGrams = Math.round((cal * 0.30) / 4);
+          var carbGrams = Math.round((cal * 0.40) / 4);
+          var fatGrams = Math.round((cal * 0.30) / 9);
+
+          var chartBox = document.createElement('div');
+          chartBox.className = 'calc-chart-container';
+          chartBox.innerHTML =
+            '<h3 class="calc-chart-title">Recommended Daily Macronutrients</h3>' +
+            '<div class="calc-macro-bar">' +
+              '<div class="macro-seg macro-prot" style="width:30%;" title="Protein: 30%">Protein 30% (' + proteinGrams + 'g)</div>' +
+              '<div class="macro-seg macro-carb" style="width:40%;" title="Carbohydrates: 40%">Carbs 40% (' + carbGrams + 'g)</div>' +
+              '<div class="macro-seg macro-fat" style="width:30%;" title="Fat: 30%">Fat 30% (' + fatGrams + 'g)</div>' +
+            '</div>' +
+            '<p class="calc-macro-sub">Caloric baseline: <b>' + cal.toLocaleString() + ' kcal</b>/day</p>';
+          res.appendChild(chartBox);
+        }
+      }
+    }
+
+    function saveCalculationHistory(slug, title, resultSummary) {
+      try {
+        var inputsSummary = '';
+        var activeForm = document.querySelector('form[name="' + slug + '"]') || document.querySelector('form');
+        if (activeForm) {
+          var inps = activeForm.querySelectorAll('input[type="text"], input[type="number"], select');
+          var parts = [];
+          inps.forEach(function (inp) {
+            if (inp.value && inp.type !== 'hidden' && inp.type !== 'submit' && inp.name !== 'calcSearchForm' && parts.length < 3) {
+              var val = inp.value.trim();
+              if (val.length > 0 && val.length < 20) parts.push(val);
+            }
+          });
+          if (parts.length > 0) inputsSummary = parts.join(' • ');
+        }
+
+        var currentUrl = window.location.pathname + window.location.search;
+        var existing = JSON.parse(localStorage.getItem('allinone_calc_history') || '[]');
+        var item = {
+          id: Date.now().toString(),
+          slug: slug,
+          title: title,
+          url: currentUrl,
+          resultSummary: resultSummary,
+          inputsSummary: inputsSummary,
+          timestamp: Date.now()
+        };
+
+        var next = [item].concat(existing.filter(function (e) {
+          return e.slug !== slug || (Date.now() - e.timestamp > 60000);
+        })).slice(0, 20);
+
+        localStorage.setItem('allinone_calc_history', JSON.stringify(next));
+        window.dispatchEvent(new CustomEvent('calc-history-updated'));
+      } catch (e) {}
+    }
+
+    // Global copy fallback for iOS Safari and restricted contexts
+    function copyTextToClipboard(text, onSuccess) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(function () {
+          fallbackExecCopy(text, onSuccess);
+        });
+      } else {
+        fallbackExecCopy(text, onSuccess);
+      }
+    }
+
+    function fallbackExecCopy(text, onSuccess) {
+      try {
+        var textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.top = '0';
+        textArea.style.left = '0';
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (onSuccess) onSuccess();
+      } catch (err) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      window.copyCalcResult = function (btn) {
+        var card = btn.closest('.result-card') || document.getElementById('dynResultDiv');
+        if (!card) return;
+        var clone = card.cloneNode(true);
+        var toolbar = clone.querySelector('.calc-result-toolbar');
+        if (toolbar) toolbar.remove();
+        var charts = clone.querySelector('.calc-chart-container');
+        if (charts) charts.remove();
+
+        var text = clone.innerText.replace(/\n{3,}/g, '\n\n').trim();
+        copyTextToClipboard(text, function () {
+          var original = btn.innerHTML;
+          btn.innerHTML =
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>' +
+            '<span style="color:#059669;font-weight:700;">Copied!</span>';
+          setTimeout(function () { btn.innerHTML = original; }, 2000);
+        });
+      };
+
+      window.shareCalcLink = function (btn) {
+        var activeForm = document.querySelector('form');
+        var params = new URLSearchParams();
+        if (activeForm) {
+          var elements = activeForm.elements;
+          for (var i = 0; i < elements.length; i++) {
+            var el = elements[i];
+            if (el.name && el.value && el.type !== 'submit' && el.type !== 'hidden') {
+              if ((el.type === 'radio' || el.type === 'checkbox') && !el.checked) continue;
+              params.set(el.name, el.value);
+            }
+          }
+        }
+        var fullUrl = window.location.origin + window.location.pathname + '?' + params.toString();
+        window.history.replaceState(null, '', fullUrl);
+
+        if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
+          navigator.share({ title: document.title, url: fullUrl }).catch(function () {});
+        }
+
+        copyTextToClipboard(fullUrl, function () {
+          var original = btn.innerHTML;
+          btn.innerHTML =
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>' +
+            '<span style="color:#2563eb;font-weight:700;">Link Copied!</span>';
+          setTimeout(function () { btn.innerHTML = original; }, 2000);
+        });
+      };
+
+      window.printCalcReport = function () {
+        window.print();
+      };
+
+      window.toggleCalcFavorite = function (btn, slug, title) {
+        try {
+          var favs = JSON.parse(localStorage.getItem('allinone_calc_favorites') || '[]');
+          var idx = favs.findIndex(function (f) { return f.slug === slug; });
+          var isNowFav = false;
+          if (idx !== -1) {
+            favs.splice(idx, 1);
+          } else {
+            favs.push({ slug: slug, title: title, url: window.location.pathname });
+            isNowFav = true;
+          }
+          localStorage.setItem('allinone_calc_favorites', JSON.stringify(favs));
+          window.dispatchEvent(new CustomEvent('calc-favorites-updated'));
+
+          btn.classList.toggle('active', isNowFav);
+          var svg = btn.querySelector('svg');
+          var span = btn.querySelector('span');
+          if (svg) {
+            svg.setAttribute('fill', isNowFav ? '#eab308' : 'none');
+            svg.setAttribute('stroke', isNowFav ? '#eab308' : 'currentColor');
+          }
+          if (span) span.innerText = isNowFav ? 'Starred' : 'Favorite';
+        } catch (e) {}
+      };
+    }
+
+    // Live input change listener (Debounced instant recalculation)
+    if (typeof document !== 'undefined') {
+      var liveTimer = null;
+      document.addEventListener('input', function (e) {
+        var t = e.target;
+        if (!t || !t.closest('form') || t.name === 'calcSearchForm' || t.name === 'q') return;
+        clearTimeout(liveTimer);
+        liveTimer = setTimeout(function () {
+          runCalculator(true);
+        }, 350);
+      });
+    }
   }
 })();
