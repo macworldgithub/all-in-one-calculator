@@ -1055,6 +1055,37 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
 
+/* ==========================================================================
+   INPUT SIZE CLASSES (AUTHENTIC DESKTOP & TABLET WIDTH SPECIFICATIONS)
+   Prevents compound multi-input rows (Years + Months, Feet + Inches)
+   from expanding and colliding with the Results column on desktop/tablets.
+   ========================================================================== */
+.in2char { width: 44px !important; }
+.in3char { width: 54px !important; }
+.in4char { width: 68px !important; }
+.innormal { width: 95px !important; }
+.inhalf { width: 115px !important; }
+.inlong { width: 140px !important; max-width: 100% !important; }
+.inlongesthalf { width: 160px !important; max-width: 100% !important; }
+.inlonger { width: 180px !important; max-width: 100% !important; }
+.inlongest { width: 240px !important; max-width: 100% !important; }
+.infull { width: 100% !important; max-width: 100% !important; }
+
+/* Desktop 2-column split layout gutters */
+.clefthalf, .leftinput {
+  width: 50% !important;
+  float: left !important;
+  box-sizing: border-box !important;
+  padding-right: 16px !important;
+}
+.crighthalf, .rightresult {
+  width: 50% !important;
+  float: right !important;
+  box-sizing: border-box !important;
+  padding-left: 16px !important;
+}
+
+
 
 /* --- Currency & Percentage Input Adornments --- */
 input.indollar,
@@ -1149,20 +1180,28 @@ html.dark #content input.inpct,
 
 /* --- Inline Unit Spans & Suffixes --- */
 .inuiyearspan, .inuipoundspan, .inuifootspan, .inuiinchspan, .inuickspan, .inui1cspan {
-  margin-left: -54px;
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
   pointer-events: none;
   display: inline-block;
   vertical-align: middle;
+  position: relative;
+  z-index: 2;
 }
-.inuiyear { padding-right: 54px !important; }
+.inuiyearspan { margin-left: -52px; }
+.inuipoundspan { margin-left: -52px; }
+.inuifootspan { margin-left: -42px; }
+.inuiinchspan { margin-left: -50px; }
+.inuickspan { margin-left: -38px; }
+.inui1cspan { margin-left: -24px; }
+
+.inuiyear { padding-right: 56px !important; }
 .inuipound { padding-right: 58px !important; }
-.inuifoot { padding-right: 42px !important; }
+.inuifoot { padding-right: 44px !important; }
 .inuiinch { padding-right: 52px !important; }
-.inuick { padding-right: 38px !important; }
-.inui1c { padding-right: 22px !important; }
+.inuick { padding-right: 40px !important; }
+.inui1c { padding-right: 26px !important; }
 
 /* Keep unit suffix inline with input */
 .panel td:has(.inuifootspan),
@@ -1170,7 +1209,9 @@ html.dark #content input.inpct,
 .panel td:has(.inuipoundspan),
 .panel td:has(.inuiyearspan),
 .panel td:has(.inuickspan),
-.panel td:has(.inui1cspan) {
+.panel td:has(.inui1cspan),
+.panel td[nowrap],
+#content td[nowrap] {
   white-space: nowrap !important;
 }
 
@@ -1727,6 +1768,8 @@ table.cinfoT td {
   border: 1px solid var(--border-subtle) !important;
   background: var(--bg-card-subtle) !important;
   color: var(--text-secondary) !important;
+  margin-right: 8px !important;
+  margin-bottom: 6px !important;
 }
 
 .footer-col h4, .footer-heading {
@@ -4293,4 +4336,54 @@ html.light input.inpct,
   background-position: right 12px center !important;
   background-repeat: no-repeat !important;
   padding-right: 36px !important;
+}
+
+
+/* ==========================================================================
+   TABLET & NARROW DESKTOP 2-COLUMN STACKING (<= 880px)
+   ========================================================================== */
+@media (max-width: 880px) {
+  .clefthalf, .leftinput,
+  .crighthalf, .rightresult,
+  #content .clefthalf, #content .crighthalf {
+    width: 100% !important;
+    max-width: 100% !important;
+    float: none !important;
+    clear: both !important;
+    display: block !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    box-sizing: border-box !important;
+  }
+}
+
+
+/* Compound multi-input cells on mobile & tablets */
+@media (max-width: 768px) {
+  .panel td[nowrap],
+  #content td[nowrap],
+  .panel td:has(.inuiyearspan),
+  .panel td:has(.inuipoundspan),
+  .panel td:has(.inuifootspan),
+  .panel td:has(.inuiinchspan) {
+    white-space: normal !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .panel td[nowrap] input,
+  #content td[nowrap] input,
+  .panel td:has(.inuiyearspan) input,
+  .panel td:has(.inuipoundspan) input,
+  .panel td:has(.inuifootspan) input,
+  .panel td:has(.inuiinchspan) input {
+    width: 95px !important;
+    max-width: 110px !important;
+    min-width: 80px !important;
+    flex: 0 1 auto !important;
+  }
 }
