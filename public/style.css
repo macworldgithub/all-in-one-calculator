@@ -1041,7 +1041,7 @@ input[type="text"], input[type="number"], input[type="date"], select, textarea {
   border: 1px solid var(--border-subtle) !important;
   color: var(--text-primary) !important;
   border-radius: var(--radius-sm) !important;
-  padding: 8px 12px !important;
+  padding: 8px 12px;
   font-size: 14.5px !important;
   outline: none !important;
   box-sizing: border-box !important;
@@ -1057,17 +1057,94 @@ textarea:focus {
 
 
 /* --- Currency & Percentage Input Adornments --- */
-.indollar {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' x2='12' y1='2' y2='22'/%3E%3Cpath d='M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'/%3E%3C/svg%3E");
-  background-position: 8px center;
-  background-repeat: no-repeat;
-  padding-left: 28px !important;
+input.indollar,
+input[type="text"].indollar,
+input[type="number"].indollar,
+.panel input.indollar,
+.panel input[type="text"].indollar,
+.panel input[type="number"].indollar,
+.panel .intext.indollar,
+.panel .innormal.indollar,
+.panel .inlong.indollar,
+.panel .inlonger.indollar,
+.panel .inlongest.indollar,
+.panel .inhalf.indollar,
+#content input.indollar,
+#content input[type="text"].indollar,
+#content input[type="number"].indollar,
+#content .intext.indollar,
+#content .innormal.indollar,
+#content .inlong.indollar,
+#content .inlonger.indollar,
+#content .inlongest.indollar,
+#content .inhalf.indollar,
+html.dark input.indollar,
+html.light input.indollar,
+[data-theme="dark"] input.indollar,
+[data-theme="light"] input.indollar {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' x2='12' y1='2' y2='22'/%3E%3Cpath d='M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'/%3E%3C/svg%3E") !important;
+  background-position: 12px center !important;
+  background-repeat: no-repeat !important;
+  padding-left: 38px !important;
 }
-.inpct {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='19' x2='5' y1='5' y2='19'/%3E%3Ccircle cx='6.5' cy='6.5' r='2.5'/%3E%3Ccircle cx='17.5' cy='17.5' r='2.5'/%3E%3C/svg%3E");
-  background-position: right 10px center;
-  background-repeat: no-repeat;
-  padding-right: 28px !important;
+
+html.dark input.indollar,
+html.dark input[type="text"].indollar,
+html.dark input[type="number"].indollar,
+html.dark .panel input.indollar,
+html.dark #content input.indollar,
+[data-theme="dark"] input.indollar,
+[data-theme="dark"] input[type="text"].indollar,
+[data-theme="dark"] input[type="number"].indollar {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='12' x2='12' y1='2' y2='22'/%3E%3Cpath d='M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6'/%3E%3C/svg%3E") !important;
+  background-position: 12px center !important;
+  background-repeat: no-repeat !important;
+  padding-left: 38px !important;
+}
+
+input.inpct,
+input[type="text"].inpct,
+input[type="number"].inpct,
+.panel input.inpct,
+.panel input[type="text"].inpct,
+.panel input[type="number"].inpct,
+.panel .intext.inpct,
+.panel .innormal.inpct,
+.panel .inlong.inpct,
+.panel .inlonger.inpct,
+.panel .inlongest.inpct,
+.panel .inhalf.inpct,
+#content input.inpct,
+#content input[type="text"].inpct,
+#content input[type="number"].inpct,
+#content .intext.inpct,
+#content .innormal.inpct,
+#content .inlong.inpct,
+#content .inlonger.inpct,
+#content .inlongest.inpct,
+#content .inhalf.inpct,
+html.dark input.inpct,
+html.light input.inpct,
+[data-theme="dark"] input.inpct,
+[data-theme="light"] input.inpct {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='19' x2='5' y1='5' y2='19'/%3E%3Ccircle cx='6.5' cy='6.5' r='2.5'/%3E%3Ccircle cx='17.5' cy='17.5' r='2.5'/%3E%3C/svg%3E") !important;
+  background-position: right 12px center !important;
+  background-repeat: no-repeat !important;
+  padding-right: 36px !important;
+}
+
+html.dark input.inpct,
+html.dark input[type="text"].inpct,
+html.dark input[type="number"].inpct,
+html.dark .panel input.inpct,
+html.dark #content input.inpct,
+[data-theme="dark"] input.inpct,
+[data-theme="dark"] input[type="text"].inpct,
+[data-theme="dark"] input[type="number"].inpct {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='19' x2='5' y1='5' y2='19'/%3E%3Ccircle cx='6.5' cy='6.5' r='2.5'/%3E%3Ccircle cx='17.5' cy='17.5' r='2.5'/%3E%3C/svg%3E") !important;
+  background-position: right 12px center !important;
+  background-repeat: no-repeat !important;
+  padding-right: 36px !important;
 }
 
 /* --- Inline Unit Spans & Suffixes --- */
@@ -3417,7 +3494,7 @@ select,
   .intext, .innormal, .inlong, .inlonger, .inlongest, .inhalf,
   input[type="text"], input[type="number"], select {
     font-size: 16px !important; /* Prevents auto-zoom in Safari iOS */
-    padding: 9px 10px !important;
+    padding: 9px 12px;
   }
   .panel input[type="submit"], .panel input[type="button"] {
     width: 100% !important;
@@ -4151,4 +4228,69 @@ html.light textarea::placeholder,
     padding: 6px 10px !important;
     font-size: 12px !important;
   }
+}
+
+
+/* ==========================================================================
+   DEFINITIVE CURRENCY ($) & PERCENTAGE (%) ZERO-OVERLAP GUARANTEE
+   Must remain at end of stylesheet to ensure priority over all other rules
+   ========================================================================== */
+input.indollar,
+input[type="text"].indollar,
+input[type="number"].indollar,
+.panel input.indollar,
+.panel input[type="text"].indollar,
+.panel input[type="number"].indollar,
+.panel .intext.indollar,
+.panel .innormal.indollar,
+.panel .inlong.indollar,
+.panel .inlonger.indollar,
+.panel .inlongest.indollar,
+.panel .inhalf.indollar,
+#content input.indollar,
+#content input[type="text"].indollar,
+#content input[type="number"].indollar,
+#content .intext.indollar,
+#content .innormal.indollar,
+#content .inlong.indollar,
+#content .inlonger.indollar,
+#content .inlongest.indollar,
+#content .inhalf.indollar,
+html.dark input.indollar,
+html.light input.indollar,
+[data-theme="dark"] input.indollar,
+[data-theme="light"] input.indollar {
+  background-position: 12px center !important;
+  background-repeat: no-repeat !important;
+  padding-left: 38px !important;
+}
+
+input.inpct,
+input[type="text"].inpct,
+input[type="number"].inpct,
+.panel input.inpct,
+.panel input[type="text"].inpct,
+.panel input[type="number"].inpct,
+.panel .intext.inpct,
+.panel .innormal.inpct,
+.panel .inlong.inpct,
+.panel .inlonger.inpct,
+.panel .inlongest.inpct,
+.panel .inhalf.inpct,
+#content input.inpct,
+#content input[type="text"].inpct,
+#content input[type="number"].inpct,
+#content .intext.inpct,
+#content .innormal.inpct,
+#content .inlong.inpct,
+#content .inlonger.inpct,
+#content .inlongest.inpct,
+#content .inhalf.inpct,
+html.dark input.inpct,
+html.light input.inpct,
+[data-theme="dark"] input.inpct,
+[data-theme="light"] input.inpct {
+  background-position: right 12px center !important;
+  background-repeat: no-repeat !important;
+  padding-right: 36px !important;
 }
