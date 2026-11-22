@@ -1133,10 +1133,33 @@ input[type="number"].inpct {
   width: 96px !important;
   min-width: 96px !important;
 }
+/* Unit & Currency/Percentage Dropdowns across all forms */
+select[name*="unit"],
+select[id*="unit"],
 #ctaxcost select,
-#cmoreoptioninputs select {
-  min-width: 48px !important;
+#cmoreoptioninputs select,
+.panel td select:not(.inlonger):not(.inlong):not(.infull),
+#content td select:not(.inlonger):not(.inlong):not(.infull) {
+  min-width: 72px !important;
+  width: auto !important;
+  padding: 8px 26px 8px 12px !important;
+  font-size: 14.5px !important;
+  text-align: left !important;
   box-sizing: border-box !important;
+  vertical-align: middle !important;
+}
+
+/* Date month selects across forms (Jan, Feb, ...) */
+select[name*="month"],
+select[id*="month"],
+select[name*="sm"],
+select[name^="xm"] {
+  min-width: 76px !important;
+  width: auto !important;
+  padding: 8px 24px 8px 10px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
 }
 
 /* Desktop 2-column split layout gutters */
@@ -4048,8 +4071,8 @@ html.light .macro-carb {
   }
   #cmoreoptioninputs td:nth-child(3),
   #ctaxcost td:nth-child(3) {
-    width: 56px !important;
-    min-width: 56px !important;
+    width: 78px !important;
+    min-width: 78px !important;
     white-space: nowrap !important;
   }
   #cmoreoptioninputs input,
@@ -4246,6 +4269,20 @@ html.light textarea::placeholder,
   #content td select {
     min-height: 42px !important;
     font-size: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Ensure unit select dropdowns on mobile never squeeze symbols */
+  select[name*="unit"],
+  select[id*="unit"],
+  #ctaxcost select,
+  #cmoreoptioninputs select,
+  .panel td select:not(.inlonger):not(.inlong):not(.infull),
+  #content td select:not(.inlonger):not(.inlong):not(.infull) {
+    min-width: 72px !important;
+    padding: 8px 24px 8px 10px !important;
+    min-height: 42px !important;
+    font-size: 15px !important;
     box-sizing: border-box !important;
   }
 
