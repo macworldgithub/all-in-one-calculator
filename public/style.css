@@ -1057,35 +1057,86 @@ textarea:focus {
 
 /* ==========================================================================
    INPUT SIZE CLASSES (AUTHENTIC DESKTOP & TABLET WIDTH SPECIFICATIONS)
-   Prevents compound multi-input rows (Years + Months, Feet + Inches)
-   from expanding and colliding with the Results column on desktop/tablets.
+   Ensures single inputs provide generous typing room for currencies/percentages,
+   while compound multi-input rows (Years + Months, Feet + Inches) are precisely
+   constrained to prevent 2-column layout collisions.
    ========================================================================== */
 .in2char { width: 44px !important; }
 .in3char { width: 54px !important; }
 .in4char { width: 68px !important; }
-.innormal { width: 88px !important; }
-.inhalf { width: 110px !important; }
-.inlong { width: 140px !important; max-width: 100% !important; }
+.innormal { width: 135px !important; max-width: 100% !important; }
+.inhalf { width: 120px !important; max-width: 100% !important; }
+.inlong { width: 150px !important; max-width: 100% !important; }
 .inlongesthalf { width: 160px !important; max-width: 100% !important; }
 .inlonger { width: 180px !important; max-width: 100% !important; }
 .inlongest { width: 220px !important; max-width: 100% !important; }
 .infull { width: 100% !important; max-width: 100% !important; }
 
+/* In4char with percentage adornment needs extra width for the % icon */
+.in4char.inpct,
+input[type="text"].in4char.inpct,
+input[type="number"].in4char.inpct {
+  width: 96px !important;
+  min-width: 96px !important;
+}
+
 /* Compound multi-input cells on desktop (Years + Months, Feet + Inches) */
-.panel td:has(.inuiyearspan) input,
-.panel td:has(.inuipoundspan) input,
-.panel td:has(.inuifootspan) input,
-.panel td:has(.inuiinchspan) input,
-.panel td[nowrap] input,
-#content td:has(.inuiyearspan) input,
-#content td:has(.inuipoundspan) input,
-#content td:has(.inuifootspan) input,
-#content td:has(.inuiinchspan) input,
-#content td[nowrap] input {
+input.inuiyear,
+input.inuipound,
+input.inuiyearpound,
+input.inuifoot,
+input.inuiinch,
+input.inuick,
+input.inui1c,
+.panel td:has(.inuiyearspan) input:not(.indollar):not(.inpct),
+.panel td:has(.inuipoundspan) input:not(.indollar):not(.inpct),
+.panel td:has(.inuifootspan) input:not(.indollar):not(.inpct),
+.panel td:has(.inuiinchspan) input:not(.indollar):not(.inpct),
+.panel td[nowrap] input:not(.indollar):not(.inpct),
+#content td:has(.inuiyearspan) input:not(.indollar):not(.inpct),
+#content td:has(.inuipoundspan) input:not(.indollar):not(.inpct),
+#content td:has(.inuifootspan) input:not(.indollar):not(.inpct),
+#content td:has(.inuiinchspan) input:not(.indollar):not(.inpct),
+#content td[nowrap] input:not(.indollar):not(.inpct) {
   width: 86px !important;
   max-width: 86px !important;
+  min-width: 76px !important;
   display: inline-block !important;
   vertical-align: middle !important;
+}
+
+/* Guarantee currency and percentage inputs always provide visible typing space */
+input.indollar,
+input[type="text"].indollar,
+input[type="number"].indollar {
+  min-width: 120px !important;
+}
+input.inpct,
+input[type="text"].inpct,
+input[type="number"].inpct {
+  min-width: 96px !important;
+}
+
+/* Mortgage & Finance Options Tables Inputs (#ctaxcost, #cmoreoptioninputs) */
+#ctaxcost input.innormal,
+#cmoreoptioninputs input.innormal,
+#ctaxcost td input.innormal,
+#cmoreoptioninputs td input.innormal {
+  width: 130px !important;
+  min-width: 110px !important;
+  max-width: 100% !important;
+}
+#ctaxcost input.in4char.inpct,
+#cmoreoptioninputs input.in4char.inpct,
+#ctaxcost td input.in4char.inpct,
+#cmoreoptioninputs td input.in4char.inpct {
+  width: 96px !important;
+  min-width: 96px !important;
+}
+#ctaxcost select,
+#cmoreoptioninputs select {
+  min-width: 48px !important;
+  box-sizing: border-box !important;
 }
 
 /* Desktop 2-column split layout gutters */
@@ -3990,6 +4041,23 @@ html.light .macro-carb {
     box-sizing: border-box !important;
   }
 
+  /* Table column proportions for options & tax rates */
+  #cmoreoptioninputs td:nth-child(2),
+  #ctaxcost td:nth-child(2) {
+    min-width: 120px !important;
+  }
+  #cmoreoptioninputs td:nth-child(3),
+  #ctaxcost td:nth-child(3) {
+    width: 56px !important;
+    min-width: 56px !important;
+    white-space: nowrap !important;
+  }
+  #cmoreoptioninputs input,
+  #ctaxcost input {
+    min-width: 90px !important;
+    box-sizing: border-box !important;
+  }
+
   /* Header rows inside nested option tables */
   #cmoreoptioninputs td[colspan],
   #ctaxcost td[colspan],
@@ -4326,6 +4394,7 @@ html.light input.indollar,
   background-position: 12px center !important;
   background-repeat: no-repeat !important;
   padding-left: 38px !important;
+  min-width: 110px !important;
 }
 
 input.inpct,
@@ -4356,6 +4425,7 @@ html.light input.inpct,
   background-position: right 12px center !important;
   background-repeat: no-repeat !important;
   padding-right: 36px !important;
+  min-width: 90px !important;
 }
 
 
