@@ -1063,26 +1063,45 @@ textarea:focus {
 .in2char { width: 44px !important; }
 .in3char { width: 54px !important; }
 .in4char { width: 68px !important; }
-.innormal { width: 95px !important; }
-.inhalf { width: 115px !important; }
+.innormal { width: 88px !important; }
+.inhalf { width: 110px !important; }
 .inlong { width: 140px !important; max-width: 100% !important; }
 .inlongesthalf { width: 160px !important; max-width: 100% !important; }
 .inlonger { width: 180px !important; max-width: 100% !important; }
-.inlongest { width: 240px !important; max-width: 100% !important; }
+.inlongest { width: 220px !important; max-width: 100% !important; }
 .infull { width: 100% !important; max-width: 100% !important; }
+
+/* Compound multi-input cells on desktop (Years + Months, Feet + Inches) */
+.panel td:has(.inuiyearspan) input,
+.panel td:has(.inuipoundspan) input,
+.panel td:has(.inuifootspan) input,
+.panel td:has(.inuiinchspan) input,
+.panel td[nowrap] input,
+#content td:has(.inuiyearspan) input,
+#content td:has(.inuipoundspan) input,
+#content td:has(.inuifootspan) input,
+#content td:has(.inuiinchspan) input,
+#content td[nowrap] input {
+  width: 86px !important;
+  max-width: 86px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
 
 /* Desktop 2-column split layout gutters */
 .clefthalf, .leftinput {
   width: 50% !important;
   float: left !important;
   box-sizing: border-box !important;
-  padding-right: 16px !important;
+  padding-right: 18px !important;
+  min-width: 0 !important;
 }
 .crighthalf, .rightresult {
   width: 50% !important;
   float: right !important;
   box-sizing: border-box !important;
-  padding-left: 16px !important;
+  padding-left: 18px !important;
+  min-width: 0 !important;
 }
 
 
@@ -1180,28 +1199,29 @@ html.dark #content input.inpct,
 
 /* --- Inline Unit Spans & Suffixes --- */
 .inuiyearspan, .inuipoundspan, .inuifootspan, .inuiinchspan, .inuickspan, .inui1cspan {
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 500;
-  pointer-events: none;
-  display: inline-block;
-  vertical-align: middle;
-  position: relative;
-  z-index: 2;
+  color: var(--text-muted) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  pointer-events: none !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  position: relative !important;
+  z-index: 2 !important;
+  line-height: 1 !important;
 }
-.inuiyearspan { margin-left: -52px; }
-.inuipoundspan { margin-left: -52px; }
-.inuifootspan { margin-left: -42px; }
-.inuiinchspan { margin-left: -50px; }
-.inuickspan { margin-left: -38px; }
-.inui1cspan { margin-left: -24px; }
+.inuiyearspan { margin-left: -48px !important; }
+.inuipoundspan { margin-left: -52px !important; }
+.inuifootspan { margin-left: -38px !important; }
+.inuiinchspan { margin-left: -46px !important; }
+.inuickspan { margin-left: -42px !important; }
+.inui1cspan { margin-left: -20px !important; }
 
-.inuiyear { padding-right: 56px !important; }
-.inuipound { padding-right: 58px !important; }
-.inuifoot { padding-right: 44px !important; }
-.inuiinch { padding-right: 52px !important; }
-.inuick { padding-right: 40px !important; }
-.inui1c { padding-right: 26px !important; }
+.inuiyear { padding-right: 50px !important; padding-left: 10px !important; }
+.inuipound, .inuiyearpound { padding-right: 56px !important; padding-left: 10px !important; }
+.inuifoot { padding-right: 40px !important; padding-left: 10px !important; }
+.inuiinch { padding-right: 48px !important; padding-left: 10px !important; }
+.inuick { padding-right: 44px !important; padding-left: 10px !important; }
+.inui1c { padding-right: 22px !important; padding-left: 10px !important; }
 
 /* Keep unit suffix inline with input */
 .panel td:has(.inuifootspan),
@@ -4340,9 +4360,11 @@ html.light input.inpct,
 
 
 /* ==========================================================================
-   TABLET & NARROW DESKTOP 2-COLUMN STACKING (<= 880px)
+   TABLET & NARROW DESKTOP 2-COLUMN STACKING (<= 1080px)
+   Stacks input column and results column on iPad and tablets so compound
+   inputs never collide into results.
    ========================================================================== */
-@media (max-width: 880px) {
+@media (max-width: 1080px) {
   .clefthalf, .leftinput,
   .crighthalf, .rightresult,
   #content .clefthalf, #content .crighthalf {
@@ -4357,8 +4379,11 @@ html.light input.inpct,
     margin-right: 0 !important;
     box-sizing: border-box !important;
   }
+  .rightresult, .crighthalf,
+  #content .rightresult, #content .crighthalf {
+    margin-top: 24px !important;
+  }
 }
-
 
 /* Compound multi-input cells on mobile & tablets */
 @media (max-width: 768px) {
@@ -4381,9 +4406,45 @@ html.light input.inpct,
   .panel td:has(.inuipoundspan) input,
   .panel td:has(.inuifootspan) input,
   .panel td:has(.inuiinchspan) input {
-    width: 95px !important;
-    max-width: 110px !important;
-    min-width: 80px !important;
+    width: 86px !important;
+    max-width: 95px !important;
+    min-width: 78px !important;
     flex: 0 1 auto !important;
   }
+}
+
+/* ==========================================================================
+   LEGACY TABLE BGCOLOR THEME RESETS
+   Eliminates light gray/white artifact boxes in dark mode across calculators
+   ========================================================================== */
+html.dark [bgcolor],
+html.dark table[bgcolor],
+html.dark td[bgcolor],
+html.dark tr[bgcolor],
+html.dark th[bgcolor],
+[data-theme="dark"] [bgcolor],
+[data-theme="dark"] table[bgcolor],
+[data-theme="dark"] td[bgcolor],
+[data-theme="dark"] tr[bgcolor],
+[data-theme="dark"] th[bgcolor] {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark #content table[bgcolor="#eeeeee"],
+html.dark #content table[bgcolor="#eee"],
+html.dark #content table[bgcolor="#ffffff"],
+html.dark #content table[bgcolor="#fff"],
+html.dark #content td[bgcolor="#eeeeee"],
+html.dark #content td[bgcolor="#eee"],
+html.dark #content td[bgcolor="#ffffff"],
+html.dark #content td[bgcolor="#fff"],
+html.dark #content tr[bgcolor="#eeeeee"],
+html.dark #content tr[bgcolor="#eee"],
+html.dark #content tr[bgcolor="#ffffff"],
+html.dark #content tr[bgcolor="#fff"] {
+  background: var(--bg-card-subtle) !important;
+  background-color: var(--bg-card-subtle) !important;
+  color: var(--text-primary) !important;
 }
