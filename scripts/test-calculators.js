@@ -2,7 +2,9 @@
  * Automated Standalone Test Suite for All-in-one-calculator Engines
  */
 const fs = require('fs');
-const calcEnginesCode = fs.readFileSync('d:/calculator.net/calculator-updated/public/js/calc-engines.js', 'utf8');
+const path = require('path');
+const ROOT = path.resolve(__dirname, '..');
+const calcEnginesCode = fs.readFileSync(path.join(ROOT, 'public/js/calc-engines.js'), 'utf8');
 
 function createMockEnv(slug, inputs) {
   const elements = {};
@@ -545,7 +547,7 @@ console.log("Starting All-in-one-calculator Engine Logic Verification...\n");
 
 // 50. Common.js local saveCalResult verification (replaces dead /my-account/save.php)
 {
-  const commonCode = fs.readFileSync('d:/calculator.net/calculator-updated/public/js/common.js', 'utf8');
+  const commonCode = fs.readFileSync(path.join(ROOT, 'public/js/common.js'), 'utf8');
   const store = {};
   let dispatched = false;
   const mockWin = {
@@ -577,16 +579,16 @@ console.log("Starting All-in-one-calculator Engine Logic Verification...\n");
 
 // 51. Slug validation & zero dynamic eval/Function audit
 {
-  const libSrc = fs.readFileSync('d:/calculator.net/calculator-updated/lib/calculators.ts', 'utf8');
+  const libSrc = fs.readFileSync(path.join(ROOT, 'lib/calculators.ts'), 'utf8');
   if (!libSrc.includes('SAFE_SLUG_RE') || !libSrc.includes('filePath.startsWith(baseDir + path.sep)')) {
     throw new Error('Path traversal guard missing in lib/calculators.ts');
   }
   const appFiles = [
-    'd:/calculator.net/calculator-updated/public/js/calc-engines.js',
-    'd:/calculator.net/calculator-updated/public/js/conversion.js',
-    'd:/calculator.net/calculator-updated/public/js/quick-conversion.js',
-    'd:/calculator.net/calculator-updated/public/js/common.js',
-    'd:/calculator.net/calculator-updated/components/ScientificCalculator.tsx',
+    path.join(ROOT, 'public/js/calc-engines.js'),
+    path.join(ROOT, 'public/js/conversion.js'),
+    path.join(ROOT, 'public/js/quick-conversion.js'),
+    path.join(ROOT, 'public/js/common.js'),
+    path.join(ROOT, 'components/ScientificCalculator.tsx'),
   ];
   for (const file of appFiles) {
     const src = fs.readFileSync(file, 'utf8');
@@ -594,7 +596,7 @@ console.log("Starting All-in-one-calculator Engine Logic Verification...\n");
       throw new Error('Unsafe eval/Function found in ' + file);
     }
   }
-  const idx = JSON.parse(fs.readFileSync('d:/calculator.net/calculator-updated/data/calculators-index.json', 'utf8'));
+  const idx = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/calculators-index.json'), 'utf8'));
   if (!Array.isArray(idx) || idx.length < 215) {
     throw new Error('Expected >= 215 indexed calculators, got ' + idx.length);
   }
