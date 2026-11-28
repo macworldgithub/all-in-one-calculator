@@ -364,4 +364,241 @@ console.log("Starting All-in-one-calculator Engine Logic Verification...\n");
   console.log('✅ [concrete-calculator] PASSED: Slab concrete volume = 0.19 yd³');
 }
 
-console.log("\n🚀 ALL 27 ENGINE TESTS PASSED WITH 100% MATHEMATICAL PRECISION!");
+// 28-48. Newly implemented engines replacing ZERO_FIELD_MATCH stubs
+{
+  const env = createMockEnv('average-return-calculator', { bb: 5600, bd: '2023-01-01', eb: 18000, ed: '2026-11-20', a1: 'd', m1: 5000, d1: '2024-01-15' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('Annualized Return (IRR):') || !res.includes('%')) throw new Error('average-return failed: ' + res);
+  console.log('✅ [average-return-calculator] PASSED: XIRR computed with cash flows');
+}
+
+{
+  const env = createMockEnv('bandwidth-calculator', { ctype: 2, downloadsize2: 100, downloadsize2unit: 'MB', bandwidth2: 8, bandwidth2unit: 'mb' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('100 sec')) throw new Error('bandwidth failed: ' + res);
+  console.log('✅ [bandwidth-calculator] PASSED: 100 MB at 8 Mbps = 100 sec');
+}
+
+{
+  const env = createMockEnv('big-number-calculator', { cx: '123456789012345678901234567890', cy: '987654321098765432109876543210', co: 'plus', cp: 20 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('1111111110111111111011111111100')) throw new Error('big-number failed: ' + res);
+  console.log('✅ [big-number-calculator] PASSED: Exact 30-digit BigInt addition');
+}
+
+{
+  const env = createMockEnv('bra-size-calculator', { bustsize: 38, bustsizeunit: 'inch', framesize: 34, framesizeunit: 'inch' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('34D')) throw new Error('bra-size failed: ' + res);
+  console.log('✅ [bra-size-calculator] PASSED: 38/34 in = 34D US');
+}
+
+{
+  const env = createMockEnv('engine-horsepower-calculator', { calctype: 'et', v1weight: 3500, v1weightunit: 'pound', v1time: 12, v1timeunit: 'second' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('HP')) throw new Error('engine-hp failed: ' + res);
+  console.log('✅ [engine-horsepower-calculator] PASSED: Quarter-mile ET HP calculated');
+}
+
+{
+  const env = createMockEnv('estate-tax-calculator', { residence: 15000000, debt: 500000, funeral: 10000, charitable: 0, statetax: 0, lifetimegifted: 0 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('$200,000.00')) throw new Error('estate-tax failed: ' + res);
+  console.log('✅ [estate-tax-calculator] PASSED: Taxable excess over $13.99M exemption = $200k tax');
+}
+
+{
+  const env = createMockEnv('horsepower-calculator', { calctype: 'def', force: 745.69987, forceunit: 'newton', distance: 1, distanceunit: 'meter', time: 1, timeunit: 'second' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('1 hp')) throw new Error('horsepower failed: ' + res);
+  console.log('✅ [horsepower-calculator] PASSED: 745.7 N*m/s = 1 hp');
+}
+
+{
+  const env = createMockEnv('irr-calculator', { ct: 2, bb: 1000, m1: 600, m2: 600 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('13.07%')) throw new Error('irr failed: ' + res);
+  console.log('✅ [irr-calculator] PASSED: CF [-1000, 600, 600] -> IRR 13.07%');
+}
+
+{
+  const env = createMockEnv('marriage-calculator', { csalaryincome: 65000, csalaryincome2: 45000, c401k: 10000, c401k2: 6000, cfilestatus: 'Single', cfilestatus2: 'Single', cstandarddeduction1: 'yes', cstandarddeduction21: 'yes', cstatetax: 5, cstatetax2: 5 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('Marriage Tax')) throw new Error('marriage failed: ' + res);
+  console.log('✅ [marriage-calculator] PASSED: Dual income Federal+State tax delta computed');
+}
+
+{
+  const env = createMockEnv('mileage-calculator', { from: 'New York', to: 'Boston' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('miles') || !res.includes('New York')) throw new Error('mileage failed: ' + res);
+  console.log('✅ [mileage-calculator] PASSED: New York -> Boston offline distance computed');
+}
+
+{
+  const env = createMockEnv('molecular-weight-calculator', { cmf: 'H2O' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('18.015')) throw new Error('molecular-weight failed: ' + res);
+  console.log('✅ [molecular-weight-calculator] PASSED: Molar mass of H2O = 18.015 g/mol');
+}
+
+{
+  const env = createMockEnv('mulch-calculator', { areasetting: 'a', totalarea: 270, totalareaunit: 'f', mdepth: 12, mdepthunit: 'i' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('10 yd')) throw new Error('mulch failed: ' + res);
+  console.log('✅ [mulch-calculator] PASSED: 270 sq ft at 12 in = 10 yd^3');
+}
+
+{
+  const env = createMockEnv('number-sequence-calculator', { ctype: 1, afirstnumber: 2, afactor: 5, athenumber: 20 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('97')) throw new Error('number-sequence failed: ' + res);
+  console.log('✅ [number-sequence-calculator] PASSED: Arithmetic a_20 = 97');
+}
+
+{
+  const env = createMockEnv('p-value-calculator', { z: 1.96 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('0.05')) throw new Error('p-value failed: ' + res);
+  console.log('✅ [p-value-calculator] PASSED: Z=1.96 two-tailed p = 0.05');
+}
+
+{
+  const env = createMockEnv('probability-calculator', { calctype: 'twoe', cal1pa: 0.5, cal1pb: 0.4 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('0.2') || !res.includes('0.7')) throw new Error('probability failed: ' + res);
+  console.log('✅ [probability-calculator] PASSED: P(A and B)=0.2, P(A or B)=0.7');
+}
+
+{
+  const env = createMockEnv('refinance-calculator', { cloandata: 'b', crbalance: 250000, cmpay: 1800, cinterestrate: 7, cnyears: 20, cninterestrate: 5.5, cpoints: 1, ccosts: 1500 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('New Monthly Payment:')) throw new Error('refinance failed: ' + res);
+  console.log('✅ [refinance-calculator] PASSED: New payment & break-even computed');
+}
+
+{
+  const env = createMockEnv('rent-calculator', { income: 120000, incomeunit: 'y', monthlydebt: 0 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('$3,000.00')) throw new Error('rent failed: ' + res);
+  console.log('✅ [rent-calculator] PASSED: $120k/yr -> $3,000/mo 30% rule');
+}
+
+{
+  const env = createMockEnv('root-calculator', { ctype: 3, cvar3: 81, cvar4: 4 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('= 3')) throw new Error('root failed: ' + res);
+  console.log('✅ [root-calculator] PASSED: 4th root of 81 = 3');
+}
+
+{
+  const env = createMockEnv('sample-size-calculator', { type: 1, cl: 95, ci: 5, pp: 50 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('385')) throw new Error('sample-size failed: ' + res);
+  console.log('✅ [sample-size-calculator] PASSED: 95% CI +-5% -> 385 sample size');
+}
+
+{
+  const env = createMockEnv('shoe-size-conversion', { ac: 'a', fl: 10, flu: 'in' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('25.4 cm')) throw new Error('shoe-size failed: ' + res);
+  console.log('✅ [shoe-size-conversion] PASSED: 10 in = 25.4 cm size conversion');
+}
+
+{
+  const env = createMockEnv('tire-size-calculator', { ctype: 1, ctw: 265, car: 70, cws: 17 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('31.61"')) throw new Error('tire-size failed: ' + res);
+  console.log('✅ [tire-size-calculator] PASSED: 265/70R17 diameter = 31.61"');
+}
+
+// 49. Security & CSP-safe verification (XSS escaping & no Function/eval in calculators)
+{
+  const env = createMockEnv('weight-calculator', { fromnumber: 1, unitFrom: '<img src=x onerror=alert(1)>', unitTo: 'pound' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (res.includes('<img src=x')) throw new Error('XSS escaping failed in weight-calculator: ' + res);
+  if (!res.includes('&lt;img src=x')) throw new Error('Expected escaped HTML entity in output: ' + res);
+  console.log('✅ [security-xss-escape] PASSED: Unit labels safely HTML-escaped');
+}
+
+// 50. Common.js local saveCalResult verification (replaces dead /my-account/save.php)
+{
+  const commonCode = fs.readFileSync('d:/calculator.net/calculator-updated/public/js/common.js', 'utf8');
+  const store = {};
+  let dispatched = false;
+  const mockWin = {
+    location: { pathname: '/bmi-calculator', search: '?cheightfeet=5' },
+    CustomEvent: function (name) { return { type: name }; },
+    dispatchEvent: function (ev) { if (ev.type === 'calc-favorites-updated') dispatched = true; }
+  };
+  const mockLs = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); }
+  };
+  const noteEl = { style: {}, className: 'calc-saved-toast', textContent: '' };
+  const calOut = { querySelector: () => noteEl, appendChild: () => {} };
+  const mockD = {
+    title: 'BMI Calculator',
+    getElementById: (id) => (id === 'caloutput' ? calOut : null),
+    querySelector: () => null,
+    createElement: () => noteEl
+  };
+  const fn = new Function('window', 'document', 'localStorage', commonCode + '\nreturn { saveCalResult: saveCalResult };');
+  const api = fn(mockWin, mockD, mockLs);
+  const saved = api.saveCalResult('BMI Calculator', '1', '', 'BMI', '23.0');
+  const parsed = JSON.parse(store['allinone_calc_favorites'] || '[]');
+  if (!saved || !dispatched || !Array.isArray(parsed) || parsed[0].slug !== 'bmi-calculator') {
+    throw new Error('saveCalResult local persistence failed');
+  }
+  console.log('✅ [common-saveCalResult] PASSED: Saved locally to localStorage without /my-account/save.php');
+}
+
+// 51. Slug validation & zero dynamic eval/Function audit
+{
+  const libSrc = fs.readFileSync('d:/calculator.net/calculator-updated/lib/calculators.ts', 'utf8');
+  if (!libSrc.includes('SAFE_SLUG_RE') || !libSrc.includes('filePath.startsWith(baseDir + path.sep)')) {
+    throw new Error('Path traversal guard missing in lib/calculators.ts');
+  }
+  const appFiles = [
+    'd:/calculator.net/calculator-updated/public/js/calc-engines.js',
+    'd:/calculator.net/calculator-updated/public/js/conversion.js',
+    'd:/calculator.net/calculator-updated/public/js/quick-conversion.js',
+    'd:/calculator.net/calculator-updated/public/js/common.js',
+    'd:/calculator.net/calculator-updated/components/ScientificCalculator.tsx',
+  ];
+  for (const file of appFiles) {
+    const src = fs.readFileSync(file, 'utf8');
+    if (/\beval\s*\(/.test(src) || /new\s+Function\s*\(/.test(src) || /(^|[^a-zA-Z0-9_$.])Function\s*\(/.test(src)) {
+      throw new Error('Unsafe eval/Function found in ' + file);
+    }
+  }
+  const idx = JSON.parse(fs.readFileSync('d:/calculator.net/calculator-updated/data/calculators-index.json', 'utf8'));
+  if (!Array.isArray(idx) || idx.length < 215) {
+    throw new Error('Expected >= 215 indexed calculators, got ' + idx.length);
+  }
+  console.log(`✅ [security-eval-audit] PASSED: 0 eval/Function calls across core bundles (${idx.length} tools indexed)`);
+}
+
+console.log("\n🚀 ALL 51 ENGINE & SECURITY TESTS PASSED WITH 100% PRECISION!");

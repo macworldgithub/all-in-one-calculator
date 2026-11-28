@@ -1,13 +1,24 @@
 import React from "react";
 import Link from "next/link";
+import { getCalculatorsIndex } from "@/lib/calculators";
 import { FinancialIcon, FitnessIcon, MathIcon, EverydayIcon } from "./Icons";
 
 export default function CategoryTiles() {
+  const index = getCalculatorsIndex();
+  const counts = index.reduce<Record<string, number>>((acc, item) => {
+    acc[item.category] = (acc[item.category] || 0) + 1;
+    return acc;
+  }, {});
+  const finCount = counts["financial"] || 0;
+  const fitCount = counts["fitness-and-health"] || 0;
+  const mathCount = counts["math"] || 0;
+  const otherCount = counts["other"] || 0;
+
   const categories = [
     {
       title: "Financial",
       href: "/financial-calculator",
-      badge: "76 Tools",
+      badge: `${finCount} Tools`,
       categoryKey: "financial",
       icon: <FinancialIcon size={24} color="#2563eb" />,
       description: "Mortgages, Loans, Investments & Taxes",
@@ -25,12 +36,12 @@ export default function CategoryTiles() {
         { label: "Salary Calculator", href: "/salary-calculator" },
         { label: "401(k) Calculator", href: "/401k-calculator" },
       ],
-      moreLabel: "All 76 Financial Tools",
+      moreLabel: `All ${finCount} Financial Tools`,
     },
     {
       title: "Fitness & Health",
       href: "/fitness-and-health-calculator",
-      badge: "32 Tools",
+      badge: `${fitCount} Tools`,
       categoryKey: "fitness",
       icon: <FitnessIcon size={24} color="#059669" />,
       description: "BMI, Calories, Body Fat & Pregnancy",
@@ -48,12 +59,12 @@ export default function CategoryTiles() {
         { label: "Ovulation Calculator", href: "/ovulation-calculator" },
         { label: "Healthy Weight", href: "/healthy-weight-calculator" },
       ],
-      moreLabel: "All 32 Health Tools",
+      moreLabel: `All ${fitCount} Health Tools`,
     },
     {
       title: "Math & Science",
       href: "/math-calculator",
-      badge: "45 Tools",
+      badge: `${mathCount} Tools`,
       categoryKey: "math",
       icon: <MathIcon size={24} color="#7c3aed" />,
       description: "Scientific, Percentages & Geometry",
@@ -71,12 +82,12 @@ export default function CategoryTiles() {
         { label: "Log Calculator", href: "/log-calculator" },
         { label: "Exponent Calculator", href: "/exponent-calculator" },
       ],
-      moreLabel: "All 45 Math Tools",
+      moreLabel: `All ${mathCount} Math Tools`,
     },
     {
       title: "Other & Everyday",
       href: "/other-calculator",
-      badge: "62 Tools",
+      badge: `${otherCount} Tools`,
       categoryKey: "other",
       icon: <EverydayIcon size={24} color="#d97706" />,
       description: "Age, Dates, GPA, Concrete & Tools",
@@ -94,7 +105,7 @@ export default function CategoryTiles() {
         { label: "Tip Calculator", href: "/tip-calculator" },
         { label: "Fuel Cost Calculator", href: "/fuel-cost-calculator" },
       ],
-      moreLabel: "All 62 Everyday Tools",
+      moreLabel: `All ${otherCount} Everyday Tools`,
     },
   ];
 

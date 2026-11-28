@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useId } from "react";
 import { useRouter } from "next/navigation";
 import searchIndex from "@/data/search-index.json";
 import {
@@ -26,7 +26,10 @@ export default function CommandPalette() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const cmdInputId = useId();
+  const cmdListId = useId();
   const router = useRouter();
 
   const closePalette = () => {
@@ -90,17 +93,32 @@ export default function CommandPalette() {
     return matchesQuery && matchesCat;
   }).slice(0, 24);
 
-  // Keyboard navigation within list
+  // Keyboard navigation + Tab focus trap within modal
   const handleKeyInModal = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1 < filtered.length ? prev + 1 : 0));
+      if (filtered.length > 0) setSelectedIndex((prev) => (prev + 1 < filtered.length ? prev + 1 : 0));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 >= 0 ? prev - 1 : filtered.length - 1));
+      if (filtered.length > 0) setSelectedIndex((prev) => (prev - 1 >= 0 ? prev - 1 : filtered.length - 1));
     } else if (e.key === "Enter" && filtered[selectedIndex]) {
       e.preventDefault();
       navigateTo(filtered[selectedIndex].url);
+    } else if (e.key === "Tab" && modalRef.current) {
+      const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length > 0) {
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
   };
 
@@ -133,6 +151,7 @@ export default function CommandPalette() {
       aria-label="Quick Calculator Search"
     >
       <div
+        ref={modalRef}
         className="cmd-palette-modal"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyInModal}
@@ -140,9 +159,17 @@ export default function CommandPalette() {
         {/* Search Input Bar */}
         <div className="cmd-input-bar">
           <SearchIcon size={20} color="var(--text-muted)" className="cmd-search-icon" />
+          <label htmlFor={cmdInputId} className="sr-only">
+            Quick calculator search
+          </label>
           <input
+            id={cmdInputId}
             ref={inputRef}
             type="text"
+            role="combobox"
+            aria-expanded="true"
+            aria-controls={cmdListId}
+            aria-activedescendant={filtered[selectedIndex] ? `${cmdListId}-${selectedIndex}` : undefined}
             className="cmd-input-field"
             placeholder="Search 200+ calculators (e.g. Mortgage, BMI, Grade)..."
             value={query}
@@ -164,9 +191,14 @@ export default function CommandPalette() {
               <CloseIcon size={16} />
             </button>
           )}
-          <kbd className="cmd-esc-badge" onClick={closePalette}>
+          <button
+            type="button"
+            className="cmd-esc-badge"
+            onClick={closePalette}
+            aria-label="Close quick calculator search"
+          >
             ESC
-          </kbd>
+          </button>
         </div>
 
         {/* Category Filters */}
@@ -194,11 +226,15 @@ export default function CommandPalette() {
         </div>
 
         {/* Results List */}
-        <div className="cmd-results-list" ref={listRef}>
+        <div id={cmdListId} className="cmd-results-list" ref={listRef} role="listbox" aria-label="Calculator results">
           {filtered.length > 0 ? (
             filtered.map((item, index) => (
               <div
+                id={`${cmdListId}-${index}`}
                 key={item.url}
+                role="option"
+                aria-selected={selectedIndex === index}
+                tabIndex={-1}
                 className={`cmd-result-item ${selectedIndex === index ? "selected" : ""}`}
                 onClick={() => navigateTo(item.url)}
                 onMouseEnter={() => setSelectedIndex(index)}

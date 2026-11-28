@@ -9,9 +9,26 @@ import { ShieldCheckIcon, BoltIcon, DeviceMobileIcon } from "@/components/Icons"
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://all-in-one-calculator.vercel.app"
+  ),
   title: "All-in-one-calculator: Free Online Calculators - Math, Fitness, Finance, Science",
   description:
     "All-in-one-calculator provides fast, accurate, and comprehensive online calculators for finance, health, fitness, math, science, and everyday needs.",
+  openGraph: {
+    title: "All-in-one-calculator: Free Online Calculators",
+    description:
+      "Fast, accurate, privacy-first online calculators for finance, health, fitness, math, science, and everyday conversions.",
+    url: "/",
+    siteName: "All-in-one-calculator",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "All-in-one-calculator: Free Online Calculators",
+    description:
+      "215+ free online calculators for finance, health, fitness, math, science, and conversions.",
+  },
   manifest: "/manifest.json",
   icons: {
     icon: [

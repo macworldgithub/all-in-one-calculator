@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useId } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import searchIndex from "@/data/search-index.json";
 import { SearchIcon, CloseIcon } from "./Icons";
 
@@ -19,6 +20,8 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputId = useId();
+  const router = useRouter();
 
   const q = query.trim().toLowerCase();
   const results =
@@ -56,10 +59,12 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
     >
       <form
         name="calcSearchForm"
+        role="search"
         onSubmit={(e) => {
           e.preventDefault();
           if (results.length > 0) {
-            window.location.href = results[0].url;
+            setIsFocused(false);
+            router.push(results[0].url);
           }
         }}
         autoComplete="off"
@@ -79,11 +84,14 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
           }}
         >
           <SearchIcon size={18} color="var(--text-muted)" className="flex-shrink-0" />
-
+          <label htmlFor={inputId} className="sr-only">
+            Search calculators
+          </label>
           <input
-            type="text"
+            type="search"
             name="calcSearchTerm"
-            id="calcSearchTerm"
+            id={inputId}
+            aria-label="Search calculators"
             placeholder="Search all 200+ calculators (e.g. mortgage, BMI)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}

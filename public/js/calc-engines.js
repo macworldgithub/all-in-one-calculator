@@ -6,6 +6,165 @@
 
 (function () {
   var lastSubmittedForm = null;
+  var lastSubmitButton = null;
+  function escapeHtml(val) {
+    return String(val)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function safeEvalConvFormula(formula, iv) {
+    var expr = String(formula || '').replace(/\s+/g, '');
+    var pos = 0;
+    function parseExpr() {
+      var v = parseTerm();
+      while (pos < expr.length && (expr[pos] === '+' || expr[pos] === '-')) {
+        var op = expr[pos++];
+        var r = parseTerm();
+        v = op === '+' ? v + r : v - r;
+      }
+      return v;
+    }
+    function parseTerm() {
+      var v = parseUnary();
+      while (pos < expr.length && (expr[pos] === '*' || expr[pos] === '/')) {
+        var op = expr[pos++];
+        var r = parseUnary();
+        v = op === '*' ? v * r : v / r;
+      }
+      return v;
+    }
+    function parseUnary() {
+      if (expr[pos] === '+') { pos++; return parseUnary(); }
+      if (expr[pos] === '-') { pos++; return -parseUnary(); }
+      return parsePrimary();
+    }
+    function parsePrimary() {
+      if (expr[pos] === '(') {
+        pos++;
+        var v = parseExpr();
+        if (expr[pos] === ')') pos++;
+        return v;
+      }
+      if (expr.slice(pos, pos + 2) === 'iv') {
+        pos += 2;
+        return iv;
+      }
+      var m = expr.slice(pos).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
+      if (m) {
+        pos += m[0].length;
+        return parseFloat(m[0]);
+      }
+      return NaN;
+    }
+    var out = parseExpr();
+    return pos === expr.length ? out : NaN;
+  }
+
+  function safeEvalSciExpr(rawExpr, isDeg) {
+    var expr = String(rawExpr || '')
+      .replace(/\s+/g, '')
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/–/g, '-');
+    var pos = 0;
+    function parseExpr() {
+      var v = parseTerm();
+      while (pos < expr.length && (expr[pos] === '+' || expr[pos] === '-')) {
+        var op = expr[pos++];
+        var r = parseTerm();
+        v = op === '+' ? v + r : v - r;
+      }
+      return v;
+    }
+    function parseTerm() {
+      var v = parsePower();
+      while (pos < expr.length && (expr[pos] === '*' || expr[pos] === '/')) {
+        var op = expr[pos++];
+        var r = parsePower();
+        v = op === '*' ? v * r : v / r;
+      }
+      return v;
+    }
+    function parsePower() {
+      var base = parseUnary();
+      if (expr[pos] === '^') {
+        pos++;
+        return Math.pow(base, parsePower());
+      }
+      return base;
+    }
+    function parseUnary() {
+      if (expr[pos] === '+') { pos++; return parseUnary(); }
+      if (expr[pos] === '-') { pos++; return -parseUnary(); }
+      return parsePostfix();
+    }
+    function parsePostfix() {
+      var v = parsePrimary();
+      while (pos < expr.length && expr[pos] === '!') {
+        pos++;
+        if (v < 0 || !isFinite(v) || Math.floor(v) !== v) return NaN;
+        var n = Math.min(v, 170), f = 1;
+        for (var i = 2; i <= n; i++) f *= i;
+        v = f;
+      }
+      return v;
+    }
+    function parsePrimary() {
+      if (expr[pos] === '(') {
+        pos++;
+        var inner = parseExpr();
+        if (expr[pos] === ')') pos++;
+        return inner;
+      }
+      if (expr[pos] === 'π') { pos++; return Math.PI; }
+      var fnMatch = expr.slice(pos).match(/^(asin|acos|atan|sin|cos|tan|sqrt|log|ln|3x)\(/);
+      if (fnMatch) {
+        var fn = fnMatch[1];
+        pos += fnMatch[0].length;
+        var arg = parseExpr();
+        if (expr[pos] === ')') pos++;
+        var rad = isDeg ? (arg * Math.PI) / 180 : arg;
+        if (fn === 'sin') return Math.sin(rad);
+        if (fn === 'cos') return Math.cos(rad);
+        if (fn === 'tan') return Math.tan(rad);
+        if (fn === 'asin') return isDeg ? (Math.asin(arg) * 180) / Math.PI : Math.asin(arg);
+        if (fn === 'acos') return isDeg ? (Math.acos(arg) * 180) / Math.PI : Math.acos(arg);
+        if (fn === 'atan') return isDeg ? (Math.atan(arg) * 180) / Math.PI : Math.atan(arg);
+        if (fn === 'log') return Math.log10(arg);
+        if (fn === 'ln') return Math.log(arg);
+        if (fn === 'sqrt') return Math.sqrt(arg);
+        if (fn === '3x') return Math.cbrt(arg);
+      }
+      var numMatch = expr.slice(pos).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
+      if (numMatch) {
+        pos += numMatch[0].length;
+        return parseFloat(numMatch[0]);
+      }
+      if (expr[pos] === 'e') {
+        pos++;
+        return Math.E;
+      }
+      return NaN;
+    }
+    var out = parseExpr();
+    return pos === expr.length ? out : NaN;
+  }
+
+  function readStorageArray(key) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.warn('Unable to read storage key ' + key + ':', err);
+      return [];
+    }
+  }
   // --- Formatting Helpers ---
   function fmtMoney(num, cents) {
     if (cents === undefined) cents = 2;
@@ -28,16 +187,17 @@
   }
 
   function getIn(name, defaultVal) {
-    var el = document.querySelector('[name="' + name + '"]') || document.getElementById(name);
+    var root = (lastSubmittedForm && typeof lastSubmittedForm.querySelector === 'function') ? lastSubmittedForm : null;
+    var el = (root && root.querySelector('[name="' + name + '"]')) || document.querySelector('[name="' + name + '"]') || document.getElementById(name);
     if (!el && name.startsWith('c') && name.length > 2) {
-      el = document.querySelector('[name="' + name.slice(1) + '"]') || document.getElementById(name.slice(1));
+      el = (root && root.querySelector('[name="' + name.slice(1) + '"]')) || document.querySelector('[name="' + name.slice(1) + '"]') || document.getElementById(name.slice(1));
     }
     if (!el && !name.startsWith('c')) {
-      el = document.querySelector('[name="c' + name + '"]') || document.getElementById('c' + name);
+      el = (root && root.querySelector('[name="c' + name + '"]')) || document.querySelector('[name="c' + name + '"]') || document.getElementById('c' + name);
     }
     if (!el) return defaultVal;
     if (el.type === 'radio') {
-      var checked = document.querySelector('[name="' + el.name + '"]:checked');
+      var checked = (root && root.querySelector('[name="' + el.name + '"]:checked')) || document.querySelector('[name="' + el.name + '"]:checked');
       return checked ? checked.value : defaultVal;
     }
     if (el.type === 'checkbox') return el.checked;
@@ -131,46 +291,25 @@
       } else if (c === '=') {
         if (!sciExpr) return;
         try {
-          var clean = sciExpr
-            .replace(/×/g, '*')
-            .replace(/÷/g, '/')
-            .replace(/–/g, '-')
-            .replace(/π/g, 'Math.PI')
-            .replace(/\be\b/g, 'Math.E')
-            .replace(/\^/g, '**');
-
           var isDeg = window.cnDegreeRadians !== 'radians';
-          clean = clean.replace(/sin\(([^)]+)\)/g, isDeg ? 'Math.sin(($1)*Math.PI/180)' : 'Math.sin($1)');
-          clean = clean.replace(/cos\(([^)]+)\)/g, isDeg ? 'Math.cos(($1)*Math.PI/180)' : 'Math.cos($1)');
-          clean = clean.replace(/tan\(([^)]+)\)/g, isDeg ? 'Math.tan(($1)*Math.PI/180)' : 'Math.tan($1)');
-          clean = clean.replace(/asin\(([^)]+)\)/g, isDeg ? '(Math.asin($1)*180/Math.PI)' : 'Math.asin($1)');
-          clean = clean.replace(/acos\(([^)]+)\)/g, isDeg ? '(Math.acos($1)*180/Math.PI)' : 'Math.acos($1)');
-          clean = clean.replace(/atan\(([^)]+)\)/g, isDeg ? '(Math.atan($1)*180/Math.PI)' : 'Math.atan($1)');
-          clean = clean.replace(/log\(([^)]+)\)/g, 'Math.log10($1)');
-          clean = clean.replace(/ln\(([^)]+)\)/g, 'Math.log($1)');
-          clean = clean.replace(/sqrt\(([^)]+)\)/g, 'Math.sqrt($1)');
-          clean = clean.replace(/3x\(([^)]+)\)/g, 'Math.cbrt($1)');
-
-          clean = clean.replace(/(\d+)!/g, function (_, n) {
-            var num = Math.min(parseInt(n, 10), 100), f = 1;
-            for (var i = 2; i <= num; i++) f *= i;
-            return String(f);
-          });
-
-          var res = Function('"use strict"; return (' + clean + ')')();
+          var res = safeEvalSciExpr(sciExpr, isDeg);
           if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
             var rounded = Number(res.toFixed(10));
             sciDisplay = String(rounded);
             sciAns = rounded;
             var hist = document.getElementById('scihistory');
             if (hist) {
-              hist.innerHTML = '<div style="padding:2px 0;">' + sciExpr + ' = ' + sciDisplay + '</div>' + hist.innerHTML;
+              var entryEl = document.createElement('div');
+              entryEl.style.padding = '2px 0';
+              entryEl.textContent = sciExpr + ' = ' + sciDisplay;
+              hist.insertBefore(entryEl, hist.firstChild);
             }
             sciExpr = sciDisplay;
           } else {
             sciDisplay = 'Error';
           }
         } catch (e) {
+          console.warn('Scientific calculator eval error:', e);
           sciDisplay = 'Error';
         }
       } else if (c === 'ans') {
@@ -236,23 +375,31 @@
         sciDisplay = sciExpr;
       }
 
-      if (inEl) inEl.innerHTML = sciExpr || '&nbsp;';
-      if (outEl) outEl.innerHTML = sciDisplay;
+      if (inEl) inEl.textContent = sciExpr || '\u00A0';
+      if (outEl) outEl.textContent = sciDisplay;
     };
 
     // Physical Keyboard support for Scientific Calculator & Enter key on forms
     window.addEventListener('keydown', function (e) {
-      var activeTag = document.activeElement ? document.activeElement.tagName : '';
-      var isInput = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT';
+      var activeEl = document.activeElement;
+      var activeTag = activeEl ? activeEl.tagName : '';
+      var isField = activeTag === 'INPUT' || activeTag === 'SELECT';
 
-      // 1. Enter key triggers calculate in form inputs
-      if (isInput) {
-        if (e.key === 'Enter') {
+      // 1. Enter key triggers calculate in calculator form fields (never search boxes, modals, or textareas)
+      if (isField) {
+        if (
+          e.key === 'Enter' &&
+          activeEl.id !== 'calcSearchTerm' &&
+          activeEl.name !== 'calcSearchTerm' &&
+          activeEl.type !== 'search' &&
+          !activeEl.closest('.nav-search-form, [role="dialog"]')
+        ) {
           e.preventDefault();
           runCalculator();
         }
         return;
       }
+      if (activeTag === 'TEXTAREA') return;
 
       // 2. Physical keyboard typing for scientific calculator
       if (document.getElementById('sciOutPut') && typeof window.r === 'function') {
@@ -471,7 +618,9 @@
             engines[key]();
             handled = true;
             break;
-          } catch (err) {}
+          } catch (err) {
+            console.warn('Fallback engine error for ' + key + ':', err);
+          }
         }
       }
     }
@@ -5521,10 +5670,12 @@ engines['grade-calculator'] = function () {
     var out = kg / (toKg[tU] || 0.45359237);
     var c = getResultContainer();
     if (!c) return;
+    var safeFromUnit = escapeHtml(getIn('unitFrom', 'kg'));
+    var safeToUnit = escapeHtml(getIn('unitTo', 'pound'));
     c.innerHTML = `
-      <h2 class="h2result">${val} ${getIn('unitFrom', 'kg')} = ${fmtNum(out, 6)} ${getIn('unitTo', 'pound')}</h2>
+      <h2 class="h2result">${val} ${safeFromUnit} = ${fmtNum(out, 6)} ${safeToUnit}</h2>
       <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>Converted Weight</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(out, 6)} ${getIn('unitTo', 'pound')}</b></font></td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Converted Weight</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(out, 6)} ${safeToUnit}</b></font></td></tr>
         <tr><td>Kilograms</td><td align="right">${fmtNum(kg, 4)} kg</td></tr>
         <tr><td>Pounds</td><td align="right">${fmtNum(kg / 0.45359237, 4)} lbs</td></tr>
       </table>
@@ -5591,6 +5742,1160 @@ engines['grade-calculator'] = function () {
     `;
   };
 
+  // Shared statistical & arbitrary-precision helpers
+  function normCdfStd(z) {
+    var sign = z < 0 ? -1 : 1;
+    var x = Math.abs(z) / Math.SQRT2;
+    var t = 1 / (1 + 0.3275911 * x);
+    var y = 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t) * Math.exp(-x * x);
+    return 0.5 * (1 + sign * y);
+  }
+
+  function normInvStd(p) {
+    if (p <= 0 || p >= 1) return NaN;
+    var a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+    var b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+    var c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    var d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+    var plow = 0.02425, phigh = 1 - plow, q, r;
+    if (p < plow) {
+      q = Math.sqrt(-2 * Math.log(p));
+      return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    }
+    if (phigh < p) {
+      q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    }
+    q = p - 0.5; r = q * q;
+    return ((((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q) /
+      (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  }
+
+  function solveXirr(flows) {
+    function npv(rate) {
+      var total = 0;
+      for (var i = 0; i < flows.length; i++) {
+        var f = flows[i];
+        total += f.amount / Math.pow(1 + rate, f.years);
+      }
+      return total;
+    }
+    var low = -0.95, high = 10.0, fLow = npv(low), fHigh = npv(high);
+    while (fLow * fHigh > 0 && high < 1000) {
+      high *= 2;
+      fHigh = npv(high);
+    }
+    if (fLow * fHigh > 0) return NaN;
+    for (var it = 0; it < 100; it++) {
+      var mid = (low + high) / 2;
+      var fMid = npv(mid);
+      if (Math.abs(fMid) < 1e-7) return mid;
+      if (fLow * fMid <= 0) { high = mid; fHigh = fMid; } else { low = mid; fLow = fMid; }
+    }
+    return (low + high) / 2;
+  }
+
+  // 1. Average Return Calculator (XIRR + Simple Return + Contributions Breakdown)
+  engines['average-return-calculator'] = function () {
+    var bb = getFloat('bb', 5600);
+    var eb = getFloat('eb', 18000);
+    var bdStr = String(getIn('bd', '2023-01-01'));
+    var edStr = String(getIn('ed', '2026-11-20'));
+    var t0 = new Date(bdStr).getTime();
+    var tEnd = new Date(edStr).getTime();
+    if (isNaN(t0) || isNaN(tEnd) || tEnd <= t0) {
+      t0 = Date.now() - 365.25 * 86400000;
+      tEnd = Date.now();
+    }
+    var totalYears = Math.max(1 / 365.25, (tEnd - t0) / (365.25 * 86400000));
+    var flows = [{ amount: -bb, years: 0 }];
+    var totalDeposits = 0, totalWithdrawals = 0;
+    for (var i = 1; i <= 50; i++) {
+      var amt = getFloat('m' + i, NaN);
+      if (!isNaN(amt) && amt !== 0) {
+        var act = String(getIn('a' + i, 'd'));
+        var dStr = String(getIn('d' + i, bdStr));
+        var ti = new Date(dStr).getTime();
+        var yrs = isNaN(ti) ? totalYears / 2 : Math.max(0, Math.min(totalYears, (ti - t0) / (365.25 * 86400000)));
+        if (act === 'w') {
+          totalWithdrawals += amt;
+          flows.push({ amount: amt, years: yrs });
+        } else {
+          totalDeposits += amt;
+          flows.push({ amount: -amt, years: yrs });
+        }
+      }
+    }
+    flows.push({ amount: eb, years: totalYears });
+    var xirr = solveXirr(flows);
+    var netInvested = bb + totalDeposits - totalWithdrawals;
+    var netGain = eb - netInvested;
+    var cumPct = netInvested > 0 ? (netGain / netInvested) * 100 : 0;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Annualized Return (IRR): ${isNaN(xirr) ? 'N/A' : fmtNum(xirr * 100, 2) + '%'}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Money-Weighted Annual Return</b></td><td align="right"><font size="+1" color="green"><b>${isNaN(xirr) ? 'N/A' : fmtNum(xirr * 100, 2) + '% / yr'}</b></font></td></tr>
+        <tr><td>Cumulative Return on Net Invested</td><td align="right"><b>${fmtNum(cumPct, 2)}%</b></td></tr>
+        <tr><td>Beginning Balance + Deposits</td><td align="right">${fmtMoney(bb + totalDeposits)}</td></tr>
+        <tr><td>Total Withdrawals</td><td align="right">${fmtMoney(totalWithdrawals)}</td></tr>
+        <tr><td>Ending Balance</td><td align="right">${fmtMoney(eb)}</td></tr>
+        <tr><td>Net Investment Gain</td><td align="right"><b>${fmtMoney(netGain)}</b></td></tr>
+        <tr><td>Holding Period</td><td align="right">${fmtNum(totalYears, 2)} years</td></tr>
+      </table>
+    `;
+  };
+
+  // 2. Bandwidth Calculator (Data converter, download time, site bandwidth, hosting usage)
+  engines['bandwidth-calculator'] = function () {
+    var mode = String(getIn('ctype', '1'));
+    var bitsMap = { b: 1, kb: 1e3, mb: 1e6, gb: 1e9, tb: 1e12, B: 8, KB: 8e3, MB: 8e6, GB: 8e9, TB: 8e12 };
+    var unitLabels = { b: 'bits (b)', kb: 'kilobits (kb)', mb: 'megabits (mb)', gb: 'gigabits (gb)', tb: 'terabits (tb)', B: 'Bytes (B)', KB: 'Kilobytes (KB)', MB: 'Megabytes (MB)', GB: 'Gigabytes (GB)', TB: 'Terabytes (TB)' };
+    var c = getResultContainer();
+    if (!c) return;
+
+    if (mode === '2') {
+      var sz = Math.max(0, getFloat('downloadsize2', 500));
+      var szU = String(getIn('downloadsize2unit', 'MB'));
+      var bw = Math.max(1e-9, getFloat('bandwidth2', 5));
+      var bwU = String(getIn('bandwidth2unit', 'mb'));
+      var totalBits = sz * (bitsMap[szU] || 8e6);
+      var bps = bw * (bitsMap[bwU] || 1e6);
+      var sec = totalBits / bps;
+      var d = Math.floor(sec / 86400);
+      var h = Math.floor((sec % 86400) / 3600);
+      var m = Math.floor((sec % 3600) / 60);
+      var s = sec % 60;
+      c.innerHTML = `
+        <h2 class="h2result">Download / Upload Time: ${d > 0 ? d + 'd ' : ''}${h > 0 ? h + 'h ' : ''}${m > 0 ? m + 'm ' : ''}${fmtNum(s, 2)}s</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Total Seconds</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(sec, 2)} sec</b></font></td></tr>
+          <tr><td>File Size</td><td align="right">${fmtNum(sz, 2)} ${escapeHtml(unitLabels[szU] || szU)}</td></tr>
+          <tr><td>Connection Speed</td><td align="right">${fmtNum(bw, 2)} ${escapeHtml(bwU)}/s (${fmtNum(bps / 1e6, 3)} Mbps)</td></tr>
+          <tr><td>Hours Equivalent</td><td align="right">${fmtNum(sec / 3600, 4)} hours</td></tr>
+        </table>
+      `;
+    } else if (mode === '3') {
+      var pv = Math.max(0, getFloat('pageviews', 5000));
+      var pvU = String(getIn('pageviewsunit', 'day'));
+      var ps = Math.max(0, getFloat('pagesize', 500));
+      var psU = String(getIn('pagesizeunit', 'KB'));
+      var red = Math.max(1, getFloat('redundancyf', 2));
+      var perDayMult = { second: 86400, minute: 1440, hour: 24, day: 1, week: 1 / 7, month: 1 / 30.4375, year: 1 / 365.25 };
+      var pvPerDay = pv * (perDayMult[pvU] || 1);
+      var bytesPerPage = ps * ((bitsMap[psU] || 8e3) / 8);
+      var bytesMonth = pvPerDay * 30.4375 * bytesPerPage * red;
+      var gbMonth = bytesMonth / 1e9;
+      var mbps = (bytesMonth * 8) / (30.4375 * 86400 * 1e6);
+      c.innerHTML = `
+        <h2 class="h2result">Required Website Bandwidth: ${fmtNum(gbMonth, 2)} GB / month</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Monthly Bandwidth (with ${fmtNum(red, 1)}x redundancy)</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(gbMonth, 2)} GB / mo (${fmtNum(gbMonth / 1000, 4)} TB)</b></font></td></tr>
+          <tr><td>Sustained Connection Speed</td><td align="right"><b>${fmtNum(mbps, 4)} Mbps</b></td></tr>
+          <tr><td>Daily Page Views</td><td align="right">${fmtNum(pvPerDay, 1)} views/day</td></tr>
+        </table>
+      `;
+    } else if (mode === '4') {
+      var usage = getFloat('usage', NaN);
+      var usageU = String(getIn('usageunit', 'GB'));
+      var bw4 = getFloat('bandwidth4', NaN);
+      var bw4U = String(getIn('bandwidth4unit', 'mb'));
+      var secsPerMonth = 30.4375 * 86400;
+      if (!isNaN(usage) && usage > 0) {
+        var totalB = usage * (bitsMap[usageU] || 8e9);
+        var mbpsOut = totalB / (secsPerMonth * 1e6);
+        c.innerHTML = `
+          <h2 class="h2result">Sustained Speed Needed: ${fmtNum(mbpsOut, 4)} Mbit/s</h2>
+          <table class="cinfoT" width="100%" style="margin-top:10px;">
+            <tr style="background:#eaf2e8;"><td><b>Monthly Transfer</b></td><td align="right">${fmtNum(usage, 2)} ${escapeHtml(usageU)}/mo</td></tr>
+            <tr><td>Equivalent Speed (Mbit/s)</td><td align="right"><b>${fmtNum(mbpsOut, 4)} Mbit/s</b></td></tr>
+            <tr><td>Equivalent Speed (Kbit/s)</td><td align="right">${fmtNum(mbpsOut * 1000, 2)} Kbit/s</td></tr>
+          </table>
+        `;
+      } else {
+        var speedBps = Math.max(0, isNaN(bw4) ? 10 : bw4) * (bitsMap[bw4U] || 1e6);
+        var gbOut = (speedBps * secsPerMonth) / 8e9;
+        c.innerHTML = `
+          <h2 class="h2result">Monthly Data Capacity: ${fmtNum(gbOut, 2)} GB / month</h2>
+          <table class="cinfoT" width="100%" style="margin-top:10px;">
+            <tr style="background:#eaf2e8;"><td><b>Max Monthly Transfer</b></td><td align="right"><b>${fmtNum(gbOut, 2)} GB (${fmtNum(gbOut / 1000, 3)} TB)</b></td></tr>
+          </table>
+        `;
+      }
+    } else {
+      var amt = getFloat('convertamount', 500);
+      var u = String(getIn('convertunit', 'MB'));
+      var bits = amt * (bitsMap[u] || 8e6);
+      c.innerHTML = `
+        <h2 class="h2result">${fmtNum(amt, 4)} ${escapeHtml(unitLabels[u] || u)} Converted</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr><td>Bits (b)</td><td align="right">${fmtNum(bits, 2)}</td></tr>
+          <tr><td>Kilobits (kb)</td><td align="right">${fmtNum(bits / 1e3, 4)}</td></tr>
+          <tr><td>Megabits (mb)</td><td align="right">${fmtNum(bits / 1e6, 6)}</td></tr>
+          <tr><td>Gigabits (gb)</td><td align="right">${fmtNum(bits / 1e9, 8)}</td></tr>
+          <tr><td>Bytes (B)</td><td align="right">${fmtNum(bits / 8, 2)}</td></tr>
+          <tr><td>Kilobytes (KB)</td><td align="right">${fmtNum(bits / 8e3, 4)}</td></tr>
+          <tr><td>Megabytes (MB)</td><td align="right"><b>${fmtNum(bits / 8e6, 6)}</b></td></tr>
+          <tr><td>Gigabytes (GB)</td><td align="right"><b>${fmtNum(bits / 8e9, 8)}</b></td></tr>
+        </table>
+      `;
+    }
+  };
+
+  // 3. Big Number Calculator (Exact BigInt Decimal Arithmetic)
+  engines['big-number-calculator'] = function () {
+    function parseDec(str) {
+      var s = String(str || '0').trim().replace(/,/g, '');
+      if (!/^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(s)) return null;
+      var neg = s[0] === '-';
+      if (s[0] === '+' || s[0] === '-') s = s.slice(1);
+      var parts = s.split('.');
+      var intStr = (parts[0] || '0').replace(/^0+(?=\d)/, '');
+      var fracStr = (parts[1] || '').replace(/0+$/, '');
+      var coeff = BigInt((intStr + fracStr) || '0');
+      if (coeff === 0n) neg = false;
+      return { neg: neg, coeff: coeff, scale: fracStr.length };
+    }
+    function fmtBigDec(coeff, scale, neg) {
+      if (coeff === 0n) return '0';
+      var sign = neg ? '-' : '';
+      var s = coeff.toString();
+      if (scale === 0) return sign + s;
+      if (s.length <= scale) s = '0'.repeat(scale - s.length + 1) + s;
+      var iPart = s.slice(0, s.length - scale);
+      var fPart = s.slice(s.length - scale).replace(/0+$/, '');
+      return sign + iPart + (fPart ? '.' + fPart : '');
+    }
+    function bigSqrtInt(n) {
+      if (n < 0n) return null;
+      if (n < 2n) return n;
+      var x = n, y = (x + 1n) >> 1n;
+      while (y < x) { x = y; y = (x + n / x) >> 1n; }
+      return x;
+    }
+    function bigGcd(a, b) {
+      a = a < 0n ? -a : a; b = b < 0n ? -b : b;
+      while (b !== 0n) { var t = a % b; a = b; b = t; }
+      return a;
+    }
+
+    var sx = String(getIn('cx', '0'));
+    var sy = String(getIn('cy', '0'));
+    var prec = Math.max(0, Math.min(200, getInt('cp', 20)));
+    var op = (lastSubmitButton && lastSubmitButton.name === 'co' && lastSubmitButton.value)
+      ? String(lastSubmitButton.value)
+      : String(getIn('co', 'plus'));
+    var dx = parseDec(sx), dy = parseDec(sy);
+    var c = getResultContainer();
+    if (!c) return;
+    if (!dx || !dy) {
+      c.innerHTML = '<h2 class="h2result">Please enter valid numbers in X and Y.</h2>';
+      return;
+    }
+    var outStr = '';
+    var ax = dx.neg ? -dx.coeff : dx.coeff;
+    var ay = dy.neg ? -dy.coeff : dy.coeff;
+    var maxS = Math.max(dx.scale, dy.scale);
+    var sxAligned = ax * (10n ** BigInt(maxS - dx.scale));
+    var syAligned = ay * (10n ** BigInt(maxS - dy.scale));
+
+    if (op === 'plus' || op === 'minus') {
+      var res = op === 'plus' ? (sxAligned + syAligned) : (sxAligned - syAligned);
+      outStr = fmtBigDec(res < 0n ? -res : res, maxS, res < 0n);
+    } else if (op === 'multiple') {
+      var prod = ax * ay;
+      outStr = fmtBigDec(prod < 0n ? -prod : prod, dx.scale + dy.scale, prod < 0n);
+    } else if (op === 'divide') {
+      if (syAligned === 0n) {
+        outStr = 'Undefined (division by zero)';
+      } else {
+        var negQ = (sxAligned < 0n) !== (syAligned < 0n);
+        var absX = sxAligned < 0n ? -sxAligned : sxAligned;
+        var absY = syAligned < 0n ? -syAligned : syAligned;
+        var scaledQ = (absX * (10n ** BigInt(prec))) / absY;
+        outStr = fmtBigDec(scaledQ, prec, negQ);
+      }
+    } else if (op === 'square') {
+      outStr = fmtBigDec(ax * ax, dx.scale * 2, false);
+    } else if (op === 'pow') {
+      if (dy.scale !== 0 || dy.neg || dy.coeff > 500n) {
+        outStr = 'Exponent Y must be a non-negative integer <= 500';
+      } else {
+        var p = ax ** dy.coeff;
+        outStr = fmtBigDec(p < 0n ? -p : p, dx.scale * Number(dy.coeff), p < 0n);
+      }
+    } else if (op === 'sqrt') {
+      if (ax < 0n) {
+        outStr = 'Undefined for negative X';
+      } else {
+        var extra = prec * 2 + (dx.scale % 2);
+        var base = ax * (10n ** BigInt(extra));
+        var sq = bigSqrtInt(base);
+        outStr = fmtBigDec(sq, (dx.scale + extra) / 2, false);
+      }
+    } else if (op === 'factor') {
+      if (dx.scale !== 0 || ax < 0n || ax > 2000n) {
+        outStr = 'Factorial X must be an integer between 0 and 2000';
+      } else {
+        var f = 1n;
+        for (var fi = 2n; fi <= ax; fi++) f *= fi;
+        outStr = f.toString();
+      }
+    } else if (op === 'mod') {
+      outStr = syAligned === 0n ? 'Undefined' : fmtBigDec(((sxAligned % syAligned) < 0n ? -(sxAligned % syAligned) : (sxAligned % syAligned)), maxS, sxAligned < 0n);
+    } else if (op === 'gcd') {
+      if (dx.scale !== 0 || dy.scale !== 0) outStr = 'GCD requires integer X and Y';
+      else outStr = bigGcd(ax, ay).toString();
+    } else if (op === 'lcm') {
+      if (dx.scale !== 0 || dy.scale !== 0) outStr = 'LCM requires integer X and Y';
+      else if (ax === 0n || ay === 0n) outStr = '0';
+      else {
+        var absProd = (ax < 0n ? -ax : ax) * (ay < 0n ? -ay : ay);
+        outStr = (absProd / bigGcd(ax, ay)).toString();
+      }
+    }
+
+    var opLabels = { plus: 'X + Y', minus: 'X - Y', multiple: 'X * Y', divide: 'X / Y', pow: 'X ^ Y', sqrt: 'sqrt(X)', square: 'X^2', factor: 'X!', mod: 'X mod Y', gcd: 'GCD(X, Y)', lcm: 'LCM(X, Y)' };
+    c.innerHTML = `
+      <h2 class="h2result">${escapeHtml(opLabels[op] || op)} Result</h2>
+      <div style="padding:10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;word-break:break-all;font-family:monospace;font-size:14px;color:#0f172a;"><b>${escapeHtml(outStr)}</b></div>
+      <div style="margin-top:6px;font-size:12px;color:#475569;">Digit length: ${outStr.replace(/[^0-9]/g, '').length} digits (Precision: ${prec} decimals)</div>
+    `;
+  };
+
+  // 4. Bra Size Calculator
+  engines['bra-size-calculator'] = function () {
+    var bustRaw = Math.max(20, getFloat('bustsize', 38));
+    var bustUnit = String(getIn('bustsizeunit', 'inch'));
+    var bandRaw = Math.max(18, getFloat('framesize', 34));
+    var bandUnit = String(getIn('framesizeunit', 'inch'));
+    var bustIn = bustUnit === 'centimeter' ? bustRaw / 2.54 : bustRaw;
+    var underIn = bandUnit === 'centimeter' ? bandRaw / 2.54 : bandRaw;
+    var bandUS = Math.max(28, Math.round(underIn / 2) * 2);
+    if (Math.round(underIn) % 2 === 1) bandUS = Math.round(underIn) + 1;
+    var diff = Math.max(0, Math.round(bustIn - bandUS));
+    var usCups = ['AA', 'A', 'B', 'C', 'D', 'DD/E', 'DDD/F', 'DDDD/G', 'H', 'I', 'J'];
+    var ukCups = ['AA', 'A', 'B', 'C', 'D', 'DD', 'E', 'F', 'FF', 'G', 'GG'];
+    var euCups = ['AA', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+    var cupIdx = Math.min(usCups.length - 1, diff);
+    var usBand = bandUS;
+    var euBand = Math.round((underIn * 2.54) / 5) * 5;
+    var frBand = euBand + 15;
+    var auBand = usBand - 22;
+    var sisterDownBand = Math.max(28, usBand - 2);
+    var sisterDownCup = usCups[Math.min(usCups.length - 1, cupIdx + 1)];
+    var sisterUpBand = usBand + 2;
+    var sisterUpCup = usCups[Math.max(0, cupIdx - 1)];
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Estimated Bra Size (US/CA): ${usBand}${usCups[cupIdx]}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>US / Canada Size</b></td><td align="right"><font size="+1" color="green"><b>${usBand}${usCups[cupIdx]}</b></font></td></tr>
+        <tr><td>UK Size</td><td align="right"><b>${usBand}${ukCups[cupIdx]}</b></td></tr>
+        <tr><td>EU (EN 13402)</td><td align="right">${euBand}${euCups[cupIdx]}</td></tr>
+        <tr><td>France / Spain / Belgium</td><td align="right">${frBand}${euCups[cupIdx]}</td></tr>
+        <tr><td>Australia / New Zealand</td><td align="right">${auBand}${ukCups[cupIdx]}</td></tr>
+        <tr><td>Sister Sizes</td><td align="right">${sisterDownBand}${sisterDownCup} or ${sisterUpBand}${sisterUpCup}</td></tr>
+      </table>
+    `;
+  };
+
+  // 5. Engine Horsepower Calculator
+  engines['engine-horsepower-calculator'] = function () {
+    var mode = String(getIn('calctype', 'et'));
+    var wToLb = { pound: 1, ton: 2000, kilogram: 2.20462262 };
+    var tToSec = { second: 1, minute: 60, hour: 3600, day: 86400 };
+    var sToMph = { mph: 1, kmph: 0.62137119, mps: 2.23693629 };
+    var hp = 0, label = '', detail = '';
+    if (mode === 'trap') {
+      var w2 = Math.max(1, getFloat('v2weight', 5000)) * (wToLb[String(getIn('v2weightunit', 'pound'))] || 1);
+      var sp = Math.max(1, getFloat('v2speed', 70)) * (sToMph[String(getIn('v2speedunit', 'mph'))] || 1);
+      hp = w2 * Math.pow(sp / 234, 3);
+      label = 'Trap-Speed Method';
+      detail = `Weight: ${fmtNum(w2, 1)} lbs at ${fmtNum(sp, 2)} mph`;
+    } else {
+      var w1 = Math.max(1, getFloat('v1weight', 5000)) * (wToLb[String(getIn('v1weightunit', 'pound'))] || 1);
+      var et = Math.max(0.1, getFloat('v1time', 20)) * (tToSec[String(getIn('v1timeunit', 'second'))] || 1);
+      hp = w1 / Math.pow(et / 5.825, 3);
+      label = 'Quarter-Mile Elapsed Time (ET) Method';
+      detail = `Weight: ${fmtNum(w1, 1)} lbs, ET: ${fmtNum(et, 2)} sec`;
+    }
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Estimated Engine Horsepower: ${fmtNum(hp, 2)} HP</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Horsepower (${label})</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(hp, 2)} HP</b></font></td></tr>
+        <tr><td>Kilowatts (kW)</td><td align="right"><b>${fmtNum(hp * 0.74569987, 2)} kW</b></td></tr>
+        <tr><td>Inputs Normalized</td><td align="right">${detail}</td></tr>
+      </table>
+    `;
+  };
+
+  // 6. Estate Tax Calculator
+  engines['estate-tax-calculator'] = function () {
+    var assets =
+      getFloat('residence', 0) +
+      getFloat('stock', 0) +
+      getFloat('saving', 0) +
+      getFloat('vehicle', 0) +
+      getFloat('retirement', 0) +
+      getFloat('lifeinsurance', 0) +
+      getFloat('otherasset', 0);
+    var deductions =
+      getFloat('debt', 0) +
+      getFloat('funeral', 0) +
+      getFloat('charitable', 0) +
+      getFloat('statetax', 0);
+    var gifted = getFloat('lifetimegifted', 0);
+    var netEstate = Math.max(0, assets - deductions);
+    var taxBase = netEstate + gifted;
+    var exemption = 13990000;
+    var taxableAboveExemption = Math.max(0, taxBase - exemption);
+    var estTax = taxableAboveExemption * 0.40;
+    var afterTax = Math.max(0, netEstate - estTax);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Estimated Federal Estate Tax: ${fmtMoney(estTax)}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Federal Estate Tax Due</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(estTax)}</b></font></td></tr>
+        <tr><td>Gross Estate Value</td><td align="right">${fmtMoney(assets)}</td></tr>
+        <tr><td>Total Debts &amp; Deductions</td><td align="right">${fmtMoney(deductions)}</td></tr>
+        <tr><td>Net Estate + Lifetime Gifts</td><td align="right">${fmtMoney(taxBase)}</td></tr>
+        <tr><td>Federal Exemption Threshold</td><td align="right">${fmtMoney(exemption)}</td></tr>
+        <tr><td>Taxable Excess (40% marginal)</td><td align="right">${fmtMoney(taxableAboveExemption)}</td></tr>
+        <tr><td>Net Estate Passing to Heirs</td><td align="right"><b>${fmtMoney(afterTax)}</b></td></tr>
+      </table>
+    `;
+  };
+
+  // 7. Horsepower Calculator (Mechanical work/power + Power unit converter)
+  engines['horsepower-calculator'] = function () {
+    var mode = String(getIn('calctype', 'def'));
+    var toWatts = {
+      Watt: 1,
+      Kilowatt: 1000,
+      'Mechanical Horsepower': 745.69987158,
+      'Metric Horsepower': 735.49875,
+      'Electrical Horsepower': 746,
+      'Boiler Horsepower': 9809.5,
+      'BTU/h': 0.29307107
+    };
+    var c = getResultContainer();
+    if (!c) return;
+    if (mode === 'con') {
+      var amt = getFloat('convertamount', 1);
+      var fU = String(getIn('convertfrom', 'Mechanical Horsepower'));
+      var tU = String(getIn('convertto', 'Watt'));
+      var w = amt * (toWatts[fU] || 745.69987158);
+      var out = w / (toWatts[tU] || 1);
+      c.innerHTML = `
+        <h2 class="h2result">${fmtNum(amt, 4)} ${escapeHtml(fU)} = ${fmtNum(out, 4)} ${escapeHtml(tU)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>${escapeHtml(tU)}</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(out, 4)}</b></font></td></tr>
+          <tr><td>Watts (W)</td><td align="right">${fmtNum(w, 4)} W</td></tr>
+          <tr><td>Kilowatts (kW)</td><td align="right">${fmtNum(w / 1000, 4)} kW</td></tr>
+          <tr><td>Mechanical Horsepower</td><td align="right">${fmtNum(w / 745.69987158, 4)} hp</td></tr>
+        </table>
+      `;
+    } else {
+      var fToN = { newton: 1, kilonewton: 1000, 'pound-force': 4.4482216, 'kilogram-force': 9.80665 };
+      var dToM = { meter: 1, kilometer: 1000, mile: 1609.344, yard: 0.9144 };
+      var tToS = { second: 1, minute: 60, hour: 3600, day: 86400 };
+      var F = getFloat('force', 10) * (fToN[String(getIn('forceunit', 'newton'))] || 1);
+      var D = getFloat('distance', 3) * (dToM[String(getIn('distanceunit', 'meter'))] || 1);
+      var T = Math.max(1e-9, getFloat('time', 2) * (tToS[String(getIn('timeunit', 'second'))] || 1));
+      var watts = (F * D) / T;
+      var hp = watts / 745.69987158;
+      c.innerHTML = `
+        <h2 class="h2result">Power: ${fmtNum(hp, 5)} Horsepower (${fmtNum(watts, 2)} W)</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Mechanical Horsepower</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(hp, 5)} hp</b></font></td></tr>
+          <tr><td>Metric Horsepower (PS)</td><td align="right">${fmtNum(watts / 735.49875, 5)} PS</td></tr>
+          <tr><td>Power in Watts</td><td align="right"><b>${fmtNum(watts, 3)} W</b> (${fmtNum(watts / 1000, 5)} kW)</td></tr>
+        </table>
+      `;
+    }
+  };
+
+  // 8. IRR Calculator (Fixed periodic & irregular cash flow schedules)
+  engines['irr-calculator'] = function () {
+    var ct = String(getIn('ct', '1'));
+    var flows = [];
+    var totalOut = 0, totalIn = 0;
+    if (ct === '2') {
+      var bb = getFloat('bb', 50000);
+      var cf0 = bb > 0 ? -bb : Math.abs(bb);
+      flows.push({ amount: cf0, years: 0 });
+      if (cf0 < 0) totalOut += -cf0; else totalIn += cf0;
+      for (var i = 1; i <= 40; i++) {
+        var val = getFloat('m' + i, NaN);
+        if (!isNaN(val) && val !== 0) {
+          flows.push({ amount: val, years: i });
+          if (val < 0) totalOut += -val; else totalIn += val;
+        }
+      }
+    } else {
+      var iv = getFloat('iv', 10000);
+      var hy = getFloat('hy', 2);
+      var hm = getFloat('hm', 6);
+      var ir = getFloat('ir', 15000);
+      var po = String(getIn('po', 'd'));
+      var pa = getFloat('pa', 100);
+      var pf = String(getIn('pf', 'm'));
+      var pt = String(getIn('pt', 'e'));
+      var T = Math.max(1 / 12, hy + hm / 12);
+      var ppyMap = { a: 1, sa: 2, q: 4, m: 12, sm: 24, bw: 26, w: 52 };
+      var ppy = ppyMap[pf] || 12;
+      flows.push({ amount: -iv, years: 0 });
+      totalOut += iv;
+      var steps = Math.floor(T * ppy + 1e-9);
+      for (var k = 1; k <= steps; k++) {
+        var yr = pt === 'b' ? ((k - 1) / ppy) : (k / ppy);
+        if (yr < T && pa !== 0) {
+          var amt = po === 'w' ? pa : -pa;
+          flows.push({ amount: amt, years: yr });
+          if (amt < 0) totalOut += -amt; else totalIn += amt;
+        }
+      }
+      flows.push({ amount: ir, years: T });
+      totalIn += ir;
+    }
+    var irr = solveXirr(flows);
+    var netProfit = totalIn - totalOut;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Internal Rate of Return (IRR): ${isNaN(irr) ? 'N/A' : fmtNum(irr * 100, 2) + '%'}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Annualized IRR</b></td><td align="right"><font size="+1" color="green"><b>${isNaN(irr) ? 'N/A' : fmtNum(irr * 100, 2) + '% / yr'}</b></font></td></tr>
+        <tr><td>Total Cash Inflows</td><td align="right">${fmtMoney(totalIn)}</td></tr>
+        <tr><td>Total Cash Outflows</td><td align="right">${fmtMoney(totalOut)}</td></tr>
+        <tr><td>Net Return (Profit)</td><td align="right"><b>${fmtMoney(netProfit)}</b></td></tr>
+      </table>
+    `;
+  };
+
+  // 9. Marriage Tax Calculator (Single vs Married Filing Jointly)
+  engines['marriage-calculator'] = function () {
+    function calcFedTax(grossOrd, ltcg, k401, ded, status) {
+      var agiOrd = Math.max(0, grossOrd - k401);
+      var taxableOrd = Math.max(0, agiOrd - ded);
+      var brackets = {
+        Single: [[11925, 0.10], [48475, 0.12], [103350, 0.22], [197300, 0.24], [250525, 0.32], [626350, 0.35], [Infinity, 0.37]],
+        HeadofHousehold: [[17000, 0.10], [64850, 0.12], [103350, 0.22], [197300, 0.24], [250500, 0.32], [626350, 0.35], [Infinity, 0.37]],
+        MarriedJoint: [[23850, 0.10], [96950, 0.12], [206700, 0.22], [394600, 0.24], [501050, 0.32], [751600, 0.35], [Infinity, 0.37]]
+      }[status] || [];
+      var tax = 0, prev = 0;
+      for (var i = 0; i < brackets.length; i++) {
+        var top = brackets[i][0], rate = brackets[i][1];
+        if (taxableOrd > prev) tax += (Math.min(taxableOrd, top) - prev) * rate;
+        prev = top;
+      }
+      var ltcgRate = status === 'MarriedJoint'
+        ? (taxableOrd + ltcg > 600050 ? 0.20 : taxableOrd + ltcg > 96700 ? 0.15 : 0)
+        : (taxableOrd + ltcg > 533400 ? 0.20 : taxableOrd + ltcg > 48350 ? 0.15 : 0);
+      return tax + Math.max(0, ltcg) * ltcgRate;
+    }
+
+    var stdMap = { Single: 15000, HeadofHousehold: 22500, MarriedJoint: 30000 };
+    var ord1 = getFloat('csalaryincome', 65000) + getFloat('cinterestincome', 0) + getFloat('crentalincome', 0) + getFloat('cshortcapitalgain', 0);
+    var ltcg1 = getFloat('clongcapitalgain', 0) + getFloat('cqualifieddividends', 0);
+    var k1 = getFloat('c401k', 10000);
+    var fs1 = String(getIn('cfilestatus', 'Single'));
+    var ded1 = getIn('cstandarddeduction1', 'yes') === 'no' ? getFloat('ctotaldeduction', 0) : (stdMap[fs1] || 15000);
+    var st1 = Math.max(0, getFloat('cstatetax', 5)) / 100;
+
+    var ord2 = getFloat('csalaryincome2', 45000) + getFloat('cinterestincome2', 0) + getFloat('crentalincome2', 0) + getFloat('cshortcapitalgain2', 0);
+    var ltcg2 = getFloat('clongcapitalgain2', 0) + getFloat('cqualifieddividends2', 0);
+    var k2 = getFloat('c401k2', 6000);
+    var fs2 = String(getIn('cfilestatus2', 'Single'));
+    var ded2 = getIn('cstandarddeduction21', 'yes') === 'no' ? getFloat('ctotaldeduction2', 0) : (stdMap[fs2] || 15000);
+    var st2 = Math.max(0, getFloat('cstatetax2', 5)) / 100;
+
+    var fedSingle1 = calcFedTax(ord1, ltcg1, k1, ded1, fs1);
+    var fedSingle2 = calcFedTax(ord2, ltcg2, k2, ded2, fs2);
+    var stateSingle = Math.max(0, ord1 + ltcg1 - k1 - ded1) * st1 + Math.max(0, ord2 + ltcg2 - k2 - ded2) * st2;
+    var singleTotal = fedSingle1 + fedSingle2 + stateSingle;
+
+    var dedJoint = (getIn('cstandarddeduction1', 'yes') === 'no' || getIn('cstandarddeduction21', 'yes') === 'no')
+      ? Math.max(30000, ded1 + ded2)
+      : 30000;
+    var fedJoint = calcFedTax(ord1 + ord2, ltcg1 + ltcg2, k1 + k2, dedJoint, 'MarriedJoint');
+    var avgState = (st1 + st2) / 2;
+    var stateJoint = Math.max(0, ord1 + ord2 + ltcg1 + ltcg2 - k1 - k2 - dedJoint) * avgState;
+    var jointTotal = fedJoint + stateJoint;
+    var diff = singleTotal - jointTotal;
+    var statusText = diff >= 0 ? `Marriage Tax Bonus: ${fmtMoney(diff)}` : `Marriage Tax Penalty: ${fmtMoney(-diff)}`;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">${statusText}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>${diff >= 0 ? 'Annual Tax Savings' : 'Additional Annual Tax'}</b></td><td align="right"><font size="+1" color="${diff >= 0 ? 'green' : '#b91c1c'}"><b>${fmtMoney(Math.abs(diff))} / yr</b></font></td></tr>
+        <tr><td>Combined Federal + State (Filing Separately)</td><td align="right">${fmtMoney(singleTotal)}</td></tr>
+        <tr><td>Combined Federal + State (Married Jointly)</td><td align="right"><b>${fmtMoney(jointTotal)}</b></td></tr>
+        <tr><td>Combined Gross Income</td><td align="right">${fmtMoney(ord1 + ltcg1 + ord2 + ltcg2)}</td></tr>
+      </table>
+    `;
+  };
+
+  // 10. Mileage Calculator (Offline great-circle + estimated road distance for major cities & lat,lon)
+  engines['mileage-calculator'] = function () {
+    var cities = {
+      'new york': [40.7128, -74.006], 'boston': [42.3601, -71.0589], 'los angeles': [34.0522, -118.2437],
+      'chicago': [41.8781, -87.6298], 'houston': [29.7604, -95.3698], 'phoenix': [33.4484, -112.074],
+      'philadelphia': [39.9526, -75.1652], 'san antonio': [29.4241, -98.4936], 'san diego': [32.7157, -117.1611],
+      'dallas': [32.7767, -96.797], 'san jose': [37.3382, -121.8863], 'austin': [30.2672, -97.7431],
+      'san francisco': [37.7749, -122.4194], 'seattle': [47.6062, -122.3321], 'denver': [39.7392, -104.9903],
+      'washington': [38.9072, -77.0369], 'washington dc': [38.9072, -77.0369], 'miami': [25.7617, -80.1918],
+      'atlanta': [33.749, -84.388], 'orlando': [28.5383, -81.3792], 'las vegas': [36.1699, -115.1398],
+      'detroit': [42.3314, -83.0458], 'minneapolis': [44.9778, -93.265], 'portland': [45.5152, -122.6784],
+      'london': [51.5074, -0.1278], 'paris': [48.8566, 2.3522], 'toronto': [43.6532, -79.3832],
+      'vancouver': [49.2827, -123.1207], 'montreal': [45.5017, -73.5673], 'berlin': [52.52, 13.405],
+      'tokyo': [35.6762, 139.6503], 'sydney': [-33.8688, 151.2093], 'dubai': [25.2048, 55.2708],
+      'karachi': [24.8607, 67.0011], 'lahore': [31.5204, 74.3587], 'islamabad': [33.6844, 73.0479]
+    };
+    function resolveLoc(raw) {
+      var s = String(raw || '').trim();
+      var m = s.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+      if (m) return { label: s, lat: parseFloat(m[1]), lon: parseFloat(m[2]) };
+      var key = s.toLowerCase().replace(/,.*$/, '').replace(/\s+/g, ' ').trim();
+      if (cities[key]) return { label: s, lat: cities[key][0], lon: cities[key][1] };
+      return null;
+    }
+    var fromStr = String(getIn('from', 'New York'));
+    var toStr = String(getIn('to', 'Boston'));
+    var p1 = resolveLoc(fromStr), p2 = resolveLoc(toStr);
+    var c = getResultContainer();
+    if (!c) return;
+    if (!p1 || !p2) {
+      c.innerHTML = `<h2 class="h2result">Offline Route Estimator</h2><p style="margin-top:8px;">Enter major US/world cities (e.g., <b>New York</b> to <b>Boston</b>, <b>Los Angeles</b> to <b>San Francisco</b>) or decimal GPS coordinates (<code>lat, lon</code>) to calculate distance without external tracking APIs.</p>`;
+      return;
+    }
+    var R = 3958.7613;
+    var dLat = ((p2.lat - p1.lat) * Math.PI) / 180;
+    var dLon = ((p2.lon - p1.lon) * Math.PI) / 180;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((p1.lat * Math.PI) / 180) * Math.cos((p2.lat * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var airMiles = 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var roadMiles = airMiles * 1.18;
+    var hours = roadMiles / 58;
+    var hrs = Math.floor(hours), mins = Math.round((hours - hrs) * 60);
+    c.innerHTML = `
+      <h2 class="h2result">Estimated Driving Distance: ${fmtNum(roadMiles, 1)} miles (${hrs}h ${mins}m)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Estimated Road Distance</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(roadMiles, 1)} miles (${fmtNum(roadMiles * 1.609344, 1)} km)</b></font></td></tr>
+        <tr><td>Straight-Line (Great-Circle) Distance</td><td align="right">${fmtNum(airMiles, 1)} miles (${fmtNum(airMiles * 1.609344, 1)} km)</td></tr>
+        <tr><td>Estimated Driving Time (~58 mph avg)</td><td align="right"><b>${hrs} hours ${mins} minutes</b></td></tr>
+        <tr><td>Route</td><td align="right">${escapeHtml(p1.label)} &rarr; ${escapeHtml(p2.label)}</td></tr>
+      </table>
+    `;
+  };
+
+  // 11. Molecular Weight Calculator
+  engines['molecular-weight-calculator'] = function () {
+    var AW = {
+      H: 1.008, He: 4.0026, Li: 6.94, Be: 9.0122, B: 10.81, C: 12.011, N: 14.007, O: 15.999, F: 18.998, Ne: 20.18,
+      Na: 22.99, Mg: 24.305, Al: 26.982, Si: 28.085, P: 30.974, S: 32.06, Cl: 35.45, Ar: 39.948, K: 39.098, Ca: 40.078,
+      Sc: 44.956, Ti: 47.867, V: 50.942, Cr: 51.996, Mn: 54.938, Fe: 55.845, Co: 58.933, Ni: 58.693, Cu: 63.546, Zn: 65.38,
+      Ga: 69.723, Ge: 72.63, As: 74.922, Se: 78.971, Br: 79.904, Kr: 83.798, Rb: 85.468, Sr: 87.62, Y: 88.906, Zr: 91.224,
+      Nb: 92.906, Mo: 95.95, Tc: 98, Ru: 101.07, Rh: 102.91, Pd: 106.42, Ag: 107.87, Cd: 112.41, In: 114.82, Sn: 118.71,
+      Sb: 121.76, Te: 127.6, I: 126.9, Xe: 131.29, Cs: 132.91, Ba: 137.33, La: 138.91, Ce: 140.12, Pr: 140.91, Nd: 144.24,
+      Pm: 145, Sm: 150.36, Eu: 151.96, Gd: 157.25, Tb: 158.93, Dy: 162.5, Ho: 164.93, Er: 167.26, Tm: 168.93, Yb: 173.05,
+      Lu: 174.97, Hf: 178.49, Ta: 180.95, W: 183.84, Re: 186.21, Os: 190.23, Ir: 192.22, Pt: 195.08, Au: 196.97, Hg: 200.59,
+      Tl: 204.38, Pb: 207.2, Bi: 208.98, Po: 209, At: 210, Rn: 222, Fr: 223, Ra: 226, Ac: 227, Th: 232.04, Pa: 231.04, U: 238.03
+    };
+    var raw = String(getIn('cmf', 'H2O')).trim();
+    var preset = String(getIn('ccc', '')).trim();
+    var formula = raw || preset || 'H2O';
+    var counts = {};
+    var valid = true;
+    var parts = formula.split(/[*·.]/);
+    parts.forEach(function (part) {
+      part = part.trim();
+      if (!part) return;
+      var multM = part.match(/^(\d+)(.*)$/);
+      var partMult = multM ? parseInt(multM[1], 10) : 1;
+      var s = (multM ? multM[2] : part).replace(/\[/g, '(').replace(/\]/g, ')');
+      var stack = [{}];
+      var i = 0;
+      while (i < s.length) {
+        if (s[i] === '(') {
+          stack.push({});
+          i++;
+        } else if (s[i] === ')') {
+          i++;
+          var mNum = s.slice(i).match(/^\d+/);
+          var mult = mNum ? parseInt(mNum[0], 10) : 1;
+          if (mNum) i += mNum[0].length;
+          var top = stack.pop();
+          var cur = stack[stack.length - 1] || {};
+          for (var el in top) cur[el] = (cur[el] || 0) + top[el] * mult;
+        } else {
+          var em = s.slice(i).match(/^([A-Z][a-z]?)(\d*)/);
+          if (!em || !AW[em[1]]) { valid = false; break; }
+          var cnt = em[2] ? parseInt(em[2], 10) : 1;
+          var topObj = stack[stack.length - 1];
+          topObj[em[1]] = (topObj[em[1]] || 0) + cnt;
+          i += em[0].length;
+        }
+      }
+      for (var k in stack[0]) counts[k] = (counts[k] || 0) + stack[0][k] * partMult;
+    });
+    var c = getResultContainer();
+    if (!c) return;
+    if (!valid || Object.keys(counts).length === 0) {
+      c.innerHTML = `<h2 class="h2result">Invalid chemical formula: ${escapeHtml(formula)}</h2>`;
+      return;
+    }
+    var totalMass = 0, rows = '';
+    for (var sym in counts) totalMass += AW[sym] * counts[sym];
+    for (var sym2 in counts) {
+      var mass = AW[sym2] * counts[sym2];
+      var pct = totalMass > 0 ? (mass / totalMass) * 100 : 0;
+      rows += `<tr><td>${escapeHtml(sym2)}</td><td align="right">${counts[sym2]}</td><td align="right">${fmtNum(AW[sym2], 3)}</td><td align="right">${fmtNum(pct, 2)}%</td></tr>`;
+    }
+    c.innerHTML = `
+      <h2 class="h2result">Molar Mass of ${escapeHtml(formula)}: ${fmtNum(totalMass, 4)} g/mol</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><th>Element</th><th align="right">Atoms</th><th align="right">Atomic Weight</th><th align="right">Mass %</th></tr>
+        ${rows}
+      </table>
+    `;
+  };
+
+  // 12. Mulch Calculator
+  engines['mulch-calculator'] = function () {
+    var setting = String(getIn('areasetting', 'a'));
+    var areaToSqFt = { f: 1, m: 10.7639104, y: 9, a: 43560 };
+    var dimToFt = { f: 1, m: 3.2808399, y: 3, i: 1 / 12, c: 0.0328084 };
+    var depthToFt = { i: 1 / 12, c: 0.0328084, f: 1, m: 3.2808399, y: 3 };
+    var areaSqFt = 0;
+    if (setting === 'd') {
+      for (var i = 1; i <= 12; i++) {
+        var l = getFloat('l' + i, 0), w = getFloat('w' + i, 0);
+        var mult = dimToFt[String(getIn('u' + i, 'f'))] || 1;
+        if (l > 0 && w > 0) areaSqFt += (l * mult) * (w * mult);
+      }
+      if (areaSqFt <= 0) areaSqFt = getFloat('totalarea', 200) * (areaToSqFt[String(getIn('totalareaunit', 'f'))] || 1);
+    } else {
+      areaSqFt = getFloat('totalarea', 200) * (areaToSqFt[String(getIn('totalareaunit', 'f'))] || 1);
+    }
+    var depthFt = getFloat('mdepth', 2) * (depthToFt[String(getIn('mdepthunit', 'i'))] || (1 / 12));
+    var cuFt = areaSqFt * depthFt;
+    var cuYd = cuFt / 27;
+    var liters = cuFt * 28.3168466;
+    var bags2 = Math.ceil(cuFt / 2);
+    var price = getFloat('price', 0);
+    var pUnit = String(getIn('priceunit', 'y'));
+    var costMult = { f: cuFt, y: cuYd, m: cuFt * 0.0283168, l: liters, b2: bags2, b769: cuFt / 76.9, b6: liters / 60, b730: liters / 730 };
+    var totalCost = price > 0 ? price * (costMult[pUnit] || cuYd) : 0;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Mulch Needed: ${fmtNum(cuYd, 2)} Cubic Yards (${bags2} Bags)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Volume in Cubic Yards</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(cuYd, 2)} yd&sup3;</b></font></td></tr>
+        <tr><td>Volume in Cubic Feet</td><td align="right"><b>${fmtNum(cuFt, 2)} ft&sup3;</b></td></tr>
+        <tr><td>Volume in Liters</td><td align="right">${fmtNum(liters, 1)} L</td></tr>
+        <tr><td>Standard 2 cu ft Bags</td><td align="right"><b>${bags2} bags</b></td></tr>
+        <tr><td>Covered Area</td><td align="right">${fmtNum(areaSqFt, 1)} sq ft</td></tr>
+        ${totalCost > 0 ? `<tr><td>Estimated Total Cost</td><td align="right"><b>${fmtMoney(totalCost)}</b></td></tr>` : ''}
+      </table>
+    `;
+  };
+
+  // 13. Number Sequence Calculator (Arithmetic, Geometric, Fibonacci)
+  engines['number-sequence-calculator'] = function () {
+    var mode = String(getIn('ctype', '1'));
+    var c = getResultContainer();
+    if (!c) return;
+    if (mode === '2') {
+      var a1 = getFloat('gfirstnumber', 2), r = getFloat('gfactor', 5), n = Math.max(1, Math.min(200, getInt('gthenumber', 12)));
+      var nth = a1 * Math.pow(r, n - 1);
+      var sum = r === 1 ? a1 * n : a1 * ((Math.pow(r, n) - 1) / (r - 1));
+      var seq = [];
+      for (var i = 0; i < Math.min(n, 15); i++) seq.push(fmtNum(a1 * Math.pow(r, i), 4));
+      c.innerHTML = `
+        <h2 class="h2result">Geometric Sequence (${n}th Term): ${fmtNum(nth, 4)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Term a<sub>${n}</sub></b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(nth, 4)}</b></font></td></tr>
+          <tr><td>Sum of First ${n} Terms</td><td align="right"><b>${fmtNum(sum, 4)}</b></td></tr>
+          <tr><td>Sequence Preview</td><td align="right">${seq.join(', ')}${n > 15 ? ', ...' : ''}</td></tr>
+        </table>
+      `;
+    } else if (mode === '3') {
+      var fn = Math.max(0, Math.min(100, getInt('fthenumber', 10)));
+      var fibs = [0, 1];
+      for (var fi = 2; fi <= fn; fi++) fibs[fi] = fibs[fi - 1] + fibs[fi - 2];
+      var fVal = fibs[fn];
+      var fSum = fibs.slice(0, fn + 1).reduce(function (acc, x) { return acc + x; }, 0);
+      c.innerHTML = `
+        <h2 class="h2result">Fibonacci Number F<sub>${fn}</sub> = ${fmtNum(fVal, 0)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>F<sub>${fn}</sub></b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(fVal, 0)}</b></font></td></tr>
+          <tr><td>Sum (F<sub>0</sub>..F<sub>${fn}</sub>)</td><td align="right"><b>${fmtNum(fSum, 0)}</b></td></tr>
+          <tr><td>Sequence</td><td align="right">${fibs.slice(0, Math.min(fn + 1, 16)).join(', ')}${fn > 15 ? ', ...' : ''}</td></tr>
+        </table>
+      `;
+    } else {
+      var a = getFloat('afirstnumber', 2), d = getFloat('afactor', 5), an = Math.max(1, Math.min(10000, getInt('athenumber', 20)));
+      var valN = a + (an - 1) * d;
+      var sN = (an / 2) * (2 * a + (an - 1) * d);
+      var list = [];
+      for (var j = 0; j < Math.min(an, 15); j++) list.push(fmtNum(a + j * d, 4));
+      c.innerHTML = `
+        <h2 class="h2result">Arithmetic Sequence (${an}th Term): ${fmtNum(valN, 4)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Term a<sub>${an}</sub></b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(valN, 4)}</b></font></td></tr>
+          <tr><td>Sum of First ${an} Terms</td><td align="right"><b>${fmtNum(sN, 4)}</b></td></tr>
+          <tr><td>Sequence Preview</td><td align="right">${list.join(', ')}${an > 15 ? ', ...' : ''}</td></tr>
+        </table>
+      `;
+    }
+  };
+
+  // 14. P-value Calculator (Z-score <-> 5 standard normal probabilities)
+  engines['p-value-calculator'] = function () {
+    var zVal = getFloat('z', NaN);
+    var plVal = getFloat('pl', NaN), prVal = getFloat('pr', NaN), pcVal = getFloat('pc', NaN), pinVal = getFloat('pin', NaN), poutVal = getFloat('pout', NaN);
+    var z = !isNaN(zVal) ? zVal : 2;
+    if (isNaN(zVal)) {
+      if (!isNaN(plVal) && plVal > 0 && plVal < 1) z = normInvStd(plVal);
+      else if (!isNaN(prVal) && prVal > 0 && prVal < 1) z = normInvStd(1 - prVal);
+      else if (!isNaN(pcVal) && pcVal > 0 && pcVal < 0.5) z = normInvStd(0.5 + pcVal);
+      else if (!isNaN(pinVal) && pinVal > 0 && pinVal < 1) z = normInvStd(0.5 + pinVal / 2);
+      else if (!isNaN(poutVal) && poutVal > 0 && poutVal < 1) z = normInvStd(1 - poutVal / 2);
+    }
+    var pl = normCdfStd(z);
+    var pr = 1 - pl;
+    var pAbs = normCdfStd(Math.abs(z));
+    var pc = pAbs - 0.5;
+    var pin = 2 * pAbs - 1;
+    var pout = 2 * (1 - pAbs);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">P-value (Z = ${fmtNum(z, 4)}): One-Tailed ${fmtNum(pr, 5)} | Two-Tailed ${fmtNum(pout, 5)}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Z-score</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(z, 5)}</b></font></td></tr>
+        <tr><td>Left-tailed P(Z &lt; z)</td><td align="right"><b>${fmtNum(pl, 6)}</b></td></tr>
+        <tr><td>Right-tailed P(Z &gt; z)</td><td align="right"><b>${fmtNum(pr, 6)}</b></td></tr>
+        <tr><td>Center P(0 &lt; Z &lt; |z|)</td><td align="right">${fmtNum(pc, 6)}</td></tr>
+        <tr><td>Confidence P(-|z| &lt; Z &lt; |z|)</td><td align="right">${fmtNum(pin, 6)}</td></tr>
+        <tr><td>Two-tailed P(Z &lt; -|z| or Z &gt; |z|)</td><td align="right"><b>${fmtNum(pout, 6)}</b></td></tr>
+      </table>
+    `;
+  };
+
+  // 15. Probability Calculator (Two independent, Dependent/Set, Series, Normal distribution)
+  engines['probability-calculator'] = function () {
+    var mode = String(getIn('calctype', 'twoe'));
+    var c = getResultContainer();
+    if (!c) return;
+    if (mode === 'normal') {
+      var mu = getFloat('val2mean', 0);
+      var sd = Math.max(1e-9, getFloat('val2deviation', 1));
+      var lb = getFloat('val2lb', -1);
+      var rb = getFloat('val2rb', 1);
+      var lo = Math.min(lb, rb), hi = Math.max(lb, rb);
+      var prob = normCdfStd((hi - mu) / sd) - normCdfStd((lo - mu) / sd);
+      c.innerHTML = `
+        <h2 class="h2result">Normal Probability P(${fmtNum(lo, 3)} &le; X &le; ${fmtNum(hi, 3)}) = ${fmtNum(prob, 6)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>P(lb &le; X &le; rb)</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(prob * 100, 4)}% (${fmtNum(prob, 6)})</b></font></td></tr>
+          <tr><td>Outside Range P(X &lt; lb or X &gt; rb)</td><td align="right">${fmtNum((1 - prob) * 100, 4)}%</td></tr>
+        </table>
+      `;
+    } else if (mode === 'series') {
+      var pa = Math.min(1, Math.max(0, getFloat('cal4pa', 0.6))), na = Math.max(1, getInt('cal4par', 5));
+      var pb = Math.min(1, Math.max(0, getFloat('cal4pb', 0.3))), nb = Math.max(1, getInt('cal4pbr', 3));
+      var pAllA = Math.pow(pa, na), pAllB = Math.pow(pb, nb);
+      var pNeither = Math.pow(1 - pa, na) * Math.pow(1 - pb, nb);
+      c.innerHTML = `
+        <h2 class="h2result">Series Probability: P(Both Series Occur) = ${fmtNum(pAllA * pAllB, 6)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>P(All A and All B)</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(pAllA * pAllB, 6)}</b></font></td></tr>
+          <tr><td>P(A occurs ${na} times)</td><td align="right">${fmtNum(pAllA, 6)}</td></tr>
+          <tr><td>P(B occurs ${nb} times)</td><td align="right">${fmtNum(pAllB, 6)}</td></tr>
+          <tr><td>P(Neither ever occurs)</td><td align="right">${fmtNum(pNeither, 6)}</td></tr>
+        </table>
+      `;
+    } else if (mode === 'twos') {
+      var pA = getFloat('cal3pa', NaN), pB = getFloat('cal3pb', NaN), pNA = getFloat('cal3na', NaN), pNB = getFloat('cal3nb', NaN);
+      if (isNaN(pA) && !isNaN(pNA)) pA = 1 - pNA;
+      if (isNaN(pB) && !isNaN(pNB)) pB = 1 - pNB;
+      if (isNaN(pA)) pA = 0.5;
+      var pAnd = getFloat('cal3and', NaN), pOr = getFloat('cal3or', NaN), pXor = getFloat('cal3xor', NaN), pNab = getFloat('cal3nab', NaN);
+      if (isNaN(pB)) {
+        if (!isNaN(pAnd) && !isNaN(pOr)) pB = pOr + pAnd - pA;
+        else if (!isNaN(pAnd)) pB = Math.max(pAnd, 0.4);
+        else pB = 0.4;
+      }
+      if (isNaN(pAnd)) {
+        if (!isNaN(pOr)) pAnd = pA + pB - pOr;
+        else if (!isNaN(pXor)) pAnd = (pA + pB - pXor) / 2;
+        else if (!isNaN(pNab)) pAnd = pA + pB - (1 - pNab);
+        else pAnd = Math.min(pA, pB, pA * pB);
+      }
+      var uOr = pA + pB - pAnd;
+      var uXor = pA + pB - 2 * pAnd;
+      var uNeither = Math.max(0, 1 - uOr);
+      c.innerHTML = `
+        <h2 class="h2result">P(A &cup; B) = ${fmtNum(uOr, 4)} | P(A &cap; B) = ${fmtNum(pAnd, 4)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>P(A and B)</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(pAnd, 4)}</b></font></td></tr>
+          <tr><td>P(A or B)</td><td align="right"><b>${fmtNum(uOr, 4)}</b></td></tr>
+          <tr><td>P(A XOR B)</td><td align="right">${fmtNum(uXor, 4)}</td></tr>
+          <tr><td>P(Neither A nor B)</td><td align="right">${fmtNum(uNeither, 4)}</td></tr>
+        </table>
+      `;
+    } else {
+      var a1 = Math.min(1, Math.max(0, getFloat('cal1pa', 0.5)));
+      var b1 = Math.min(1, Math.max(0, getFloat('cal1pb', 0.4)));
+      var both = a1 * b1, either = a1 + b1 - both, xor = a1 + b1 - 2 * both, neither = (1 - a1) * (1 - b1);
+      c.innerHTML = `
+        <h2 class="h2result">P(A and B) = ${fmtNum(both, 4)} | P(A or B) = ${fmtNum(either, 4)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Probability of Both P(A &cap; B)</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(both, 4)} (${fmtNum(both * 100, 2)}%)</b></font></td></tr>
+          <tr><td>Probability of Either P(A &cup; B)</td><td align="right"><b>${fmtNum(either, 4)} (${fmtNum(either * 100, 2)}%)</b></td></tr>
+          <tr><td>Either A or B, Not Both (XOR)</td><td align="right">${fmtNum(xor, 4)}</td></tr>
+          <tr><td>Neither A nor B</td><td align="right">${fmtNum(neither, 4)}</td></tr>
+          <tr><td>A occurs, B does not</td><td align="right">${fmtNum(a1 * (1 - b1), 4)}</td></tr>
+          <tr><td>B occurs, A does not</td><td align="right">${fmtNum(b1 * (1 - a1), 4)}</td></tr>
+        </table>
+      `;
+    }
+  };
+
+  // 16. Refinance Calculator
+  engines['refinance-calculator'] = function () {
+    var mode = String(getIn('cloandata', 'b'));
+    var remMonths = Math.max(1, getFloat('cyears', 20) * 12 + getFloat('cmonths', 0));
+    var oldRateM = Math.max(0, getFloat('cinterestrate', 7)) / 100 / 12;
+    var curBal = getFloat('crbalance', 250000);
+    var oldMoPmt = getFloat('cmpay', 1800);
+    if (mode === 't') {
+      var origAmt = getFloat('cloanamount', 300000);
+      var origMonths = Math.max(1, getFloat('cloanterm', 30) * 12);
+      oldMoPmt = oldRateM === 0 ? origAmt / origMonths : (origAmt * oldRateM * Math.pow(1 + oldRateM, origMonths)) / (Math.pow(1 + oldRateM, origMonths) - 1);
+      curBal = oldRateM === 0 ? origAmt * (remMonths / origMonths) : oldMoPmt * ((1 - Math.pow(1 + oldRateM, -remMonths)) / oldRateM);
+    } else if (oldRateM > 0 && oldMoPmt > curBal * oldRateM) {
+      remMonths = Math.max(1, Math.round(-Math.log(1 - (curBal * oldRateM) / oldMoPmt) / Math.log(1 + oldRateM)));
+    } else if (oldMoPmt <= 0) {
+      oldMoPmt = oldRateM === 0 ? curBal / remMonths : (curBal * oldRateM * Math.pow(1 + oldRateM, remMonths)) / (Math.pow(1 + oldRateM, remMonths) - 1);
+    }
+    var newN = Math.max(1, getFloat('cnyears', 20) * 12);
+    var newRateM = Math.max(0, getFloat('cninterestrate', 6)) / 100 / 12;
+    var cashout = getFloat('ccashout', 0);
+    var newPrincipal = Math.max(0, curBal + cashout);
+    var pointsCost = newPrincipal * (Math.max(0, getFloat('cpoints', 2)) / 100);
+    var closingCosts = getFloat('ccosts', 1500) + pointsCost;
+    var newMoPmt = newRateM === 0 ? newPrincipal / newN : (newPrincipal * newRateM * Math.pow(1 + newRateM, newN)) / (Math.pow(1 + newRateM, newN) - 1);
+    var moSavings = oldMoPmt - newMoPmt;
+    var breakEven = moSavings > 0 ? Math.ceil(closingCosts / moSavings) : Infinity;
+    var oldTotalRem = oldMoPmt * remMonths;
+    var newTotal = newMoPmt * newN + closingCosts;
+    var lifetimeDiff = oldTotalRem - newTotal;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">New Monthly Payment: ${fmtMoney(newMoPmt)} (${moSavings >= 0 ? 'Save ' + fmtMoney(moSavings) : 'Pay ' + fmtMoney(-moSavings) + ' More'}/mo)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Monthly Payment Comparison</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(newMoPmt)} vs ${fmtMoney(oldMoPmt)}</b></font></td></tr>
+        <tr><td>Remaining / New Loan Principal</td><td align="right">${fmtMoney(curBal)} / ${fmtMoney(newPrincipal)}</td></tr>
+        <tr><td>Points + Closing Costs</td><td align="right">${fmtMoney(closingCosts)}</td></tr>
+        <tr><td>Break-Even Point</td><td align="right"><b>${isFinite(breakEven) ? breakEven + ' months (' + fmtNum(breakEven / 12, 1) + ' yrs)' : 'No monthly savings'}</b></td></tr>
+        <tr><td>Lifetime Total Savings</td><td align="right"><b>${fmtMoney(lifetimeDiff)}</b></td></tr>
+      </table>
+    `;
+  };
+
+  // 17. Rent Calculator
+  engines['rent-calculator'] = function () {
+    var inc = Math.max(0, getFloat('income', 80000));
+    var incU = String(getIn('incomeunit', 'y'));
+    var moInc = incU === 'm' ? inc : inc / 12;
+    var debt = Math.max(0, getFloat('monthlydebt', 0));
+    var safe25 = Math.max(0, moInc * 0.25);
+    var rule30 = Math.max(0, moInc * 0.30);
+    var max36 = Math.max(0, moInc * 0.36 - debt);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Recommended Max Rent: ${fmtMoney(rule30)} / month</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Standard 30% Rule</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(rule30)} / mo</b></font></td></tr>
+        <tr><td>Conservative Target (25%)</td><td align="right">${fmtMoney(safe25)} / mo</td></tr>
+        <tr><td>Max With Debt (36% DTI Limit)</td><td align="right"><b>${fmtMoney(max36)} / mo</b></td></tr>
+        <tr><td>Gross Monthly Income</td><td align="right">${fmtMoney(moInc)} / mo</td></tr>
+        <tr><td>Remaining After 30% Rent &amp; Debt</td><td align="right">${fmtMoney(Math.max(0, moInc - rule30 - debt))} / mo</td></tr>
+      </table>
+    `;
+  };
+
+  // 18. Root Calculator (Square root, Cube root, N-th root)
+  engines['root-calculator'] = function () {
+    var mode = String(getIn('ctype', '1'));
+    var x = 16, n = 2;
+    if (mode === '2') {
+      x = getFloat('cvar2', 27); n = 3;
+    } else if (mode === '3') {
+      x = getFloat('cvar3', 64); n = getFloat('cvar4', 3);
+    } else {
+      x = getFloat('cvar1', 16); n = 2;
+    }
+    var c = getResultContainer();
+    if (!c) return;
+    if (n === 0) {
+      c.innerHTML = '<h2 class="h2result">Root degree (n) cannot be zero.</h2>';
+      return;
+    }
+    if (x < 0 && Math.abs(n % 2) !== 1) {
+      var imagMag = Math.pow(-x, 1 / n);
+      c.innerHTML = `
+        <h2 class="h2result">Complex Root: &plusmn;${fmtNum(imagMag, 6)}i</h2>
+        <p style="margin-top:6px;">Even root of negative number ${fmtNum(x, 4)} yields an imaginary value.</p>
+      `;
+      return;
+    }
+    var val = x < 0 ? -Math.pow(-x, 1 / n) : Math.pow(x, 1 / n);
+    c.innerHTML = `
+      <h2 class="h2result"><sup>${fmtNum(n, 2)}</sup>&radic;${fmtNum(x, 4)} = ${fmtNum(val, 8)}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Calculated Root</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(val, 8)}</b></font></td></tr>
+        <tr><td>Exact Verification (${fmtNum(val, 4)}<sup>${fmtNum(n, 2)}</sup>)</td><td align="right">${fmtNum(x < 0 ? -Math.pow(-val, n) : Math.pow(val, n), 4)}</td></tr>
+      </table>
+    `;
+  };
+
+  // 19. Sample Size Calculator
+  engines['sample-size-calculator'] = function () {
+    var mode = String(getIn('type', '1'));
+    var zTable = { 70: 1.03643, 75: 1.15035, 80: 1.28155, 85: 1.43953, 90: 1.64485, 95: 1.95996, 98: 2.32635, 99: 2.57583 };
+    var c = getResultContainer();
+    if (!c) return;
+    if (mode === '2') {
+      var cl2 = getInt('cl2', 95), ss2 = Math.max(1, getFloat('ss2', 100)), p2 = Math.min(99.9, Math.max(0.1, getFloat('pc2', 60))) / 100;
+      var N2 = getFloat('ps2', 0);
+      var z2 = zTable[cl2] || 1.95996;
+      var fpc2 = N2 > ss2 ? Math.sqrt((N2 - ss2) / (N2 - 1)) : 1;
+      var moe = z2 * Math.sqrt((p2 * (1 - p2)) / ss2) * fpc2 * 100;
+      c.innerHTML = `
+        <h2 class="h2result">Margin of Error: &plusmn;${fmtNum(moe, 2)}%</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Margin of Error</b></td><td align="right"><font size="+1" color="green"><b>&plusmn;${fmtNum(moe, 2)}%</b></font></td></tr>
+          <tr><td>Confidence Level (Z = ${fmtNum(z2, 3)})</td><td align="right">${cl2}%</td></tr>
+          <tr><td>Sample Size / Population</td><td align="right">${fmtNum(ss2, 0)} / ${N2 > 0 ? fmtNum(N2, 0) : 'Unlimited'}</td></tr>
+        </table>
+      `;
+    } else {
+      var cl = getInt('cl', 95), ci = Math.max(0.01, getFloat('ci', 5)) / 100, p = Math.min(99.9, Math.max(0.1, getFloat('pp', 50))) / 100;
+      var N = getFloat('ps', 0);
+      var z = zTable[cl] || 1.95996;
+      var nInf = (z * z * p * (1 - p)) / (ci * ci);
+      var nFinal = N > 0 ? Math.ceil(nInf / (1 + (nInf - 1) / N)) : Math.ceil(nInf);
+      c.innerHTML = `
+        <h2 class="h2result">Required Sample Size: ${fmtNum(nFinal, 0)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Minimum Sample Size</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(nFinal, 0)} respondents</b></font></td></tr>
+          <tr><td>Confidence Level</td><td align="right">${cl}% (Z = ${fmtNum(z, 3)})</td></tr>
+          <tr><td>Margin of Error</td><td align="right">&plusmn;${fmtNum(ci * 100, 2)}%</td></tr>
+          <tr><td>Population Size</td><td align="right">${N > 0 ? fmtNum(N, 0) : 'Unlimited'}</td></tr>
+        </table>
+      `;
+    }
+  };
+
+  // 20. Shoe Size Conversion
+  engines['shoe-size-conversion'] = function () {
+    var cat = String(getIn('ac', 'a'));
+    var usw = getFloat('usw', NaN), usm = getFloat('usm', NaN), uk = getFloat('uk', NaN);
+    var eu = getFloat('eu', NaN), jp = getFloat('jp', NaN), cn = getFloat('cn', NaN);
+    var fl = getFloat('fl', 10), flu = String(getIn('flu', 'in'));
+    var cm = 25.4;
+    if (!isNaN(jp)) cm = jp;
+    else if (!isNaN(cn)) cm = cn > 100 ? cn / 10 : (cn + 10) / 2;
+    else if (!isNaN(eu)) cm = (eu - 2) * (2 / 3);
+    else if (!isNaN(usm)) cm = cat === 'a' ? (usm + 22) * 0.84667 : (usm + 10) * 0.84667;
+    else if (!isNaN(usw)) cm = (usw + 20.5) * 0.84667;
+    else if (!isNaN(uk)) cm = cat === 'a' ? (uk + 22.5) * 0.84667 : (uk + 10.5) * 0.84667;
+    else cm = flu === 'mm' ? fl / 10 : flu === 'in' ? fl * 2.54 : fl;
+
+    var outUsm = Math.max(1, cm / 0.84667 - (cat === 'a' ? 22 : 10));
+    var outUsw = Math.max(4, cm / 0.84667 - 20.5);
+    var outUk = Math.max(0.5, cm / 0.84667 - (cat === 'a' ? 22.5 : 10.5));
+    var outEu = cm * 1.5 + 2;
+    var outJp = cm;
+    var outCn = cm * 2 - 10;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Shoe Size Conversion (Foot Length: ${fmtNum(cm, 1)} cm / ${fmtNum(cm / 2.54, 2)} in)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>${cat === 'a' ? 'US Men' : 'US Kids/Youth'}</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(Math.round(outUsm * 2) / 2, 1)}</b></font></td></tr>
+        ${cat === 'a' ? `<tr><td>US Women</td><td align="right"><b>${fmtNum(Math.round(outUsw * 2) / 2, 1)}</b></td></tr>` : ''}
+        <tr><td>UK Size</td><td align="right"><b>${fmtNum(Math.round(outUk * 2) / 2, 1)}</b></td></tr>
+        <tr><td>EU (European)</td><td align="right"><b>${fmtNum(Math.round(outEu), 0)}</b></td></tr>
+        <tr><td>JP (Mondopoint cm)</td><td align="right">${fmtNum(Math.round(outJp * 2) / 2, 1)} cm</td></tr>
+        <tr><td>CN (Chinese)</td><td align="right">${fmtNum(Math.round(outCn), 0)} (${fmtNum(cm * 10, 0)} mm)</td></tr>
+      </table>
+    `;
+  };
+
+  // 21. Tire Size Calculator (Spec & Side-by-Side Comparison)
+  engines['tire-size-calculator'] = function () {
+    function calcTire(wMm, ar, rimIn) {
+      var swMm = wMm * (ar / 100);
+      var swIn = swMm / 25.4;
+      var diamIn = rimIn + 2 * swIn;
+      var circIn = Math.PI * diamIn;
+      var revsMi = 63360 / circIn;
+      return { wMm: wMm, wIn: wMm / 25.4, ar: ar, rimIn: rimIn, swIn: swIn, diamIn: diamIn, circIn: circIn, revsMi: revsMi };
+    }
+    var mode = String(getIn('ctype', '1'));
+    var c = getResultContainer();
+    if (!c) return;
+    if (mode === '2') {
+      var t1 = calcTire(getFloat('ctw1', 265), getFloat('car1', 70), getFloat('cws1', 17));
+      var t2 = calcTire(getFloat('ctw2', 265), getFloat('car2', 40), getFloat('cws2', 23));
+      var pctDiff = ((t2.diamIn - t1.diamIn) / t1.diamIn) * 100;
+      var speedo60 = 60 * (t2.diamIn / t1.diamIn);
+      c.innerHTML = `
+        <h2 class="h2result">Tire Diameter Difference: ${pctDiff >= 0 ? '+' : ''}${fmtNum(pctDiff, 2)}% (Speedo 60 &rarr; ${fmtNum(speedo60, 1)} mph)</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><th>Metric</th><th align="right">Tire 1</th><th align="right">Tire 2</th><th align="right">Difference</th></tr>
+          <tr><td>Overall Diameter</td><td align="right">${fmtNum(t1.diamIn, 2)}"</td><td align="right">${fmtNum(t2.diamIn, 2)}"</td><td align="right"><b>${pctDiff >= 0 ? '+' : ''}${fmtNum(pctDiff, 2)}%</b></td></tr>
+          <tr><td>Section Width</td><td align="right">${fmtNum(t1.wIn, 2)}"</td><td align="right">${fmtNum(t2.wIn, 2)}"</td><td align="right">${fmtNum(t2.wIn - t1.wIn, 2)}"</td></tr>
+          <tr><td>Sidewall Height</td><td align="right">${fmtNum(t1.swIn, 2)}"</td><td align="right">${fmtNum(t2.swIn, 2)}"</td><td align="right">${fmtNum(t2.swIn - t1.swIn, 2)}"</td></tr>
+          <tr><td>Revs per Mile</td><td align="right">${fmtNum(t1.revsMi, 1)}</td><td align="right">${fmtNum(t2.revsMi, 1)}</td><td align="right">${fmtNum(t2.revsMi - t1.revsMi, 1)}</td></tr>
+        </table>
+      `;
+    } else {
+      var w = getFloat('ctw', 265), ar = getFloat('car', 70), rim = getFloat('cws', 17);
+      var t = calcTire(w, ar, rim);
+      var newRim = getFloat('cnws', 19), cmpRim = String(getIn('cc', 'n')) === 'y';
+      var eqAr = Math.round(((t.diamIn - newRim) / 2 / t.wIn) * 100);
+      c.innerHTML = `
+        <h2 class="h2result">Tire Size ${w}/${ar}R${rim}: Diameter ${fmtNum(t.diamIn, 2)}" (${fmtNum(t.diamIn * 25.4, 1)} mm)</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Overall Diameter</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(t.diamIn, 2)}" (${fmtNum(t.diamIn * 25.4, 1)} mm)</b></font></td></tr>
+          <tr><td>Section Width</td><td align="right">${fmtNum(t.wIn, 2)}" (${fmtNum(t.wMm, 0)} mm)</td></tr>
+          <tr><td>Sidewall Height</td><td align="right">${fmtNum(t.swIn, 2)}" (${fmtNum(t.swIn * 25.4, 1)} mm)</td></tr>
+          <tr><td>Circumference</td><td align="right">${fmtNum(t.circIn, 2)}" (${fmtNum(t.circIn * 25.4, 1)} mm)</td></tr>
+          <tr><td>Revolutions per Mile / km</td><td align="right">${fmtNum(t.revsMi, 1)} / mi (${fmtNum(t.revsMi / 1.609344, 1)} / km)</td></tr>
+          ${cmpRim ? `<tr><td>Suggested Equivalent for ${newRim}" Rim</td><td align="right"><b>${w}/${Math.max(25, eqAr)}R${newRim}</b></td></tr>` : ''}
+        </table>
+      `;
+    }
+  };
+
 if (typeof document !== 'undefined') {
     document.addEventListener('submit', function (e) {
       lastSubmittedForm = e.target;
@@ -5602,9 +6907,13 @@ if (typeof document !== 'undefined') {
     });
 
     document.addEventListener('click', function (e) {
-      var t = e.target;
-      if (t && (t.type === 'submit' || t.value === 'Calculate' || (t.classList && t.classList.contains('subbtn')))) {
-        lastSubmittedForm = t.closest('form');
+      var rawTarget = e.target;
+      var btn = rawTarget && rawTarget.closest
+        ? rawTarget.closest('button[type="submit"], input[type="submit"], input[value="Calculate"], .subbtn, button[name="co"], input[name="submits"]')
+        : rawTarget;
+      if (btn && (btn.type === 'submit' || btn.name === 'co' || btn.name === 'submits' || /Calculate|Convert/i.test(String(btn.value || '')) || (btn.classList && btn.classList.contains('subbtn')))) {
+        lastSubmitButton = btn;
+        lastSubmittedForm = btn.closest ? btn.closest('form') : null;
         var handled = runCalculator();
         if (handled) {
           e.preventDefault();
@@ -5615,7 +6924,9 @@ if (typeof document !== 'undefined') {
     function populateFromUrlAndRun() {
       if (window.location.search && window.location.search.length > 1) {
         var params = new URLSearchParams(window.location.search);
+        var SAFE_KEY_RE = /^[a-zA-Z0-9_.-]+$/;
         params.forEach(function (val, key) {
+          if (!SAFE_KEY_RE.test(key)) return;
           var els = document.querySelectorAll('[name="' + key + '"]');
           els.forEach(function (el) {
             if (el.type === 'radio' || el.type === 'checkbox') {
@@ -5646,7 +6957,7 @@ if (typeof document !== 'undefined') {
       window.currentAName = lA;
 
       function convEval(formula, iv) {
-        return Function('iv', '"use strict"; return (' + formula + ');')(iv);
+        return safeEvalConvFormula(formula, iv);
       }
       window.showSel = function (aName) {
         if (!document.calForm || !document.calForm.calFrom || !document.calForm.calTo) return;
@@ -5685,7 +6996,7 @@ if (typeof document !== 'undefined') {
               tSel.options[i - 1].selected = true;
               document.calForm.toVal.value = resVal;
               var fc = document.getElementById('fcresult');
-              if (fc) fc.innerHTML = "<font color='red'><b>Result:</b></font> " + raw + ' ' + fName + ' = ' + resVal + ' ' + cur[i][0];
+              if (fc) fc.innerHTML = "<font color='red'><b>Result:</b></font> " + escapeHtml(raw) + ' ' + escapeHtml(fName) + ' = ' + escapeHtml(resVal) + ' ' + escapeHtml(cur[i][0]);
             }
           } else {
             tSel.options[i - 1] = new Option(cur[i][0], i);
@@ -5717,6 +7028,15 @@ if (typeof document !== 'undefined') {
       if (slug === 'matrix-calculator' || document.getElementById('minputa')) {
         if (typeof window.updateInput === 'function') window.updateInput('a');
       }
+      if (slug === 'mileage-calculator') {
+        window.validateForm = function () {
+          runCalculator();
+          return false;
+        };
+      }
+      if (slug === 'big-number-calculator') {
+        window.checkGetPost = function () { return true; };
+      }
     };
 
     window.onCalculatorMount = function (slug) {
@@ -5739,12 +7059,8 @@ if (typeof document !== 'undefined') {
        ========================================================================== */
 
     function isCalculatorFavorited(slug) {
-      try {
-        var favs = JSON.parse(localStorage.getItem('allinone_calc_favorites') || '[]');
-        return favs.some(function (f) { return f.slug === slug; });
-      } catch (e) {
-        return false;
-      }
+      var favs = readStorageArray('allinone_calc_favorites');
+      return favs.some(function (f) { return f && f.slug === slug; });
     }
 
     function postProcessResult(slug, isLive) {
@@ -5777,23 +7093,31 @@ if (typeof document !== 'undefined') {
         toolbar.className = 'calc-result-toolbar';
         toolbar.innerHTML =
           '<div class="crt-group">' +
-            '<button type="button" class="crt-btn crt-copy" onclick="window.copyCalcResult(this)" title="Copy Result to Clipboard">' +
+            '<button type="button" class="crt-btn crt-copy" title="Copy Result to Clipboard">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>' +
               '<span>Copy Result</span>' +
             '</button>' +
-            '<button type="button" class="crt-btn crt-share" onclick="window.shareCalcLink(this)" title="Copy Shareable Link with Values">' +
+            '<button type="button" class="crt-btn crt-share" title="Copy Shareable Link with Values">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>' +
               '<span>Share Link</span>' +
             '</button>' +
-            '<button type="button" class="crt-btn crt-print" onclick="window.printCalcReport()" title="Print Clean Report / PDF">' +
+            '<button type="button" class="crt-btn crt-print" title="Print Clean Report / PDF">' +
               '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>' +
               '<span>Print / PDF</span>' +
             '</button>' +
           '</div>' +
-          '<button type="button" class="crt-btn crt-fav ' + (isFav ? 'active' : '') + '" onclick="window.toggleCalcFavorite(this, \'' + slug + '\', \'' + title.replace(/'/g, "\\'") + '\')" title="Favorite this tool">' +
+          '<button type="button" class="crt-btn crt-fav ' + (isFav ? 'active' : '') + '" title="Favorite this tool">' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (isFav ? '#eab308' : 'none') + '" stroke="' + (isFav ? '#eab308' : 'currentColor') + '" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' +
             '<span>' + (isFav ? 'Starred' : 'Favorite') + '</span>' +
           '</button>';
+        var copyBtn = toolbar.querySelector('.crt-copy');
+        var shareBtn = toolbar.querySelector('.crt-share');
+        var printBtn = toolbar.querySelector('.crt-print');
+        var favBtn = toolbar.querySelector('.crt-fav');
+        if (copyBtn) copyBtn.addEventListener('click', function () { window.copyCalcResult(copyBtn); });
+        if (shareBtn) shareBtn.addEventListener('click', function () { window.shareCalcLink(shareBtn); });
+        if (printBtn) printBtn.addEventListener('click', function () { window.printCalcReport(); });
+        if (favBtn) favBtn.addEventListener('click', function () { window.toggleCalcFavorite(favBtn, slug, title); });
         res.appendChild(toolbar);
       }
 
@@ -5917,7 +7241,8 @@ if (typeof document !== 'undefined') {
     function saveCalculationHistory(slug, title, resultSummary) {
       try {
         var inputsSummary = '';
-        var activeForm = document.querySelector('form[name="' + slug + '"]') || document.querySelector('form');
+        var safeFormSel = /^[a-zA-Z0-9_.-]+$/.test(slug) ? ('form[name="' + slug + '"]') : null;
+        var activeForm = (safeFormSel && document.querySelector(safeFormSel)) || document.querySelector('form');
         if (activeForm) {
           var inps = activeForm.querySelectorAll('input[type="text"], input[type="number"], select');
           var parts = [];
@@ -5931,7 +7256,7 @@ if (typeof document !== 'undefined') {
         }
 
         var currentUrl = window.location.pathname + window.location.search;
-        var existing = JSON.parse(localStorage.getItem('allinone_calc_history') || '[]');
+        var existing = readStorageArray('allinone_calc_history');
         var item = {
           id: Date.now().toString(),
           slug: slug,
@@ -5943,29 +7268,33 @@ if (typeof document !== 'undefined') {
         };
 
         var next = [item].concat(existing.filter(function (e) {
-          return e.slug !== slug || (Date.now() - e.timestamp > 60000);
+          return e && (e.slug !== slug || (Date.now() - e.timestamp > 60000));
         })).slice(0, 20);
 
         localStorage.setItem('allinone_calc_history', JSON.stringify(next));
         window.dispatchEvent(new CustomEvent('calc-history-updated'));
-      } catch (e) {}
-    }
-
-    // Global copy fallback for iOS Safari and restricted contexts
-    function copyTextToClipboard(text, onSuccess) {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(onSuccess).catch(function () {
-          fallbackExecCopy(text, onSuccess);
-        });
-      } else {
-        fallbackExecCopy(text, onSuccess);
+      } catch (e) {
+        console.warn('Unable to save calculation history:', e);
       }
     }
 
-    function fallbackExecCopy(text, onSuccess) {
+    // Global copy helper using modern Clipboard API with graceful non-blocking fallback
+    function copyTextToClipboard(text, onSuccess) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(onSuccess).catch(function (err) {
+          console.warn('Clipboard API writeText failed:', err);
+          fallbackPromptCopy(text, onSuccess);
+        });
+      } else {
+        fallbackPromptCopy(text, onSuccess);
+      }
+    }
+
+    function fallbackPromptCopy(text, onSuccess) {
       try {
         var textArea = document.createElement('textarea');
         textArea.value = text;
+        textArea.setAttribute('readonly', '');
         textArea.style.top = '0';
         textArea.style.left = '0';
         textArea.style.position = 'fixed';
@@ -5973,10 +7302,12 @@ if (typeof document !== 'undefined') {
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        document.execCommand('copy');
+        var copied = typeof document.execCommand === 'function' ? document.execCommand('copy') : false;
         document.body.removeChild(textArea);
-        if (onSuccess) onSuccess();
-      } catch (err) {}
+        if (copied && onSuccess) onSuccess();
+      } catch (err) {
+        console.warn('Fallback copy failed:', err);
+      }
     }
 
     if (typeof window !== 'undefined') {
@@ -6034,8 +7365,8 @@ if (typeof document !== 'undefined') {
 
       window.toggleCalcFavorite = function (btn, slug, title) {
         try {
-          var favs = JSON.parse(localStorage.getItem('allinone_calc_favorites') || '[]');
-          var idx = favs.findIndex(function (f) { return f.slug === slug; });
+          var favs = readStorageArray('allinone_calc_favorites');
+          var idx = favs.findIndex(function (f) { return f && f.slug === slug; });
           var isNowFav = false;
           if (idx !== -1) {
             favs.splice(idx, 1);
@@ -6054,7 +7385,9 @@ if (typeof document !== 'undefined') {
             svg.setAttribute('stroke', isNowFav ? '#eab308' : 'currentColor');
           }
           if (span) span.innerText = isNowFav ? 'Starred' : 'Favorite';
-        } catch (e) {}
+        } catch (e) {
+          console.warn('Unable to toggle favorite:', e);
+        }
       };
     }
 

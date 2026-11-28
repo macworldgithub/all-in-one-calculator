@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   HistoryIcon,
@@ -30,8 +30,10 @@ export interface FavoriteItem {
 function getInitialHistory(): CalculationHistoryItem[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem("allinone_calc_history") || "[]");
-  } catch {
+    const parsed = JSON.parse(localStorage.getItem("allinone_calc_history") || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn("Unable to read calculation history:", err);
     return [];
   }
 }
@@ -39,8 +41,10 @@ function getInitialHistory(): CalculationHistoryItem[] {
 function getInitialFavorites(): FavoriteItem[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem("allinone_calc_favorites") || "[]");
-  } catch {
+    const parsed = JSON.parse(localStorage.getItem("allinone_calc_favorites") || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn("Unable to read favorites:", err);
     return [];
   }
 }
@@ -59,6 +63,8 @@ export default function HistoryFavoritesModal() {
   const [activeTab, setActiveTab] = useState<"history" | "favorites">("history");
   const [history, setHistory] = useState<CalculationHistoryItem[]>(getInitialHistory);
   const [favorites, setFavorites] = useState<FavoriteItem[]>(getInitialFavorites);
+  const panelRef = useRef<HTMLElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleOpen = (e: CustomEvent<{ tab?: "history" | "favorites" }>) => {
@@ -89,7 +95,34 @@ export default function HistoryFavoritesModal() {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
+      const focusTimer = setTimeout(() => {
+        closeBtnRef.current?.focus();
+      }, 40);
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setIsOpen(false);
+        } else if (e.key === "Tab" && panelRef.current) {
+          const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length > 0) {
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+      window.addEventListener("keydown", handleEscape);
       return () => {
+        clearTimeout(focusTimer);
+        window.removeEventListener("keydown", handleEscape);
         document.body.style.overflow = "";
       };
     }
@@ -122,9 +155,11 @@ export default function HistoryFavoritesModal() {
   return (
     <div className="drawer-backdrop" onClick={() => setIsOpen(false)}>
       <aside
+        ref={panelRef}
         className="drawer-panel"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="Activity & Favorites Drawer"
       >
         {/* Drawer Header */}
@@ -151,6 +186,7 @@ export default function HistoryFavoritesModal() {
           </div>
 
           <button
+            ref={closeBtnRef}
             type="button"
             className="drawer-close-btn"
             onClick={() => setIsOpen(false)}

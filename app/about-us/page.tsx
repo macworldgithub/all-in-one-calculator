@@ -61,7 +61,7 @@ export default function AboutUsPage() {
 
             <h2 id="privacy">Privacy Policy</h2>
             <p>
-              At <strong>All-in-one-calculator</strong>, we respect your privacy. We do not require accounts or logins to use our calculation engines. Calculations run locally in your web browser. Standard web server logs (IP address, browser type, timestamps) are maintained solely for security and performance diagnostics.
+              At <strong>All-in-one-calculator</strong>, we respect your privacy. We do not require accounts or logins to use our calculation engines. Calculations run locally in your web browser, and your theme preference, recent calculation history, and starred favorites are stored solely in your browser&apos;s local storage (no personal data or tracking cookies are sent to our servers). Standard web server logs (IP address, browser type, timestamps) may be maintained solely for security and performance diagnostics.
             </p>
 
             <h2 id="terms">Terms of Use</h2>

@@ -202,8 +202,63 @@ function showSel(aName){
 	calcul();
 }
 
+function escapeConvHtml(str) {
+	return String(str)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+}
+function safeEvalConv(formula, iv) {
+	var expr = String(formula || "").replace(/\s+/g, "");
+	var pos = 0;
+	function parseExpr() {
+		var val = parseTerm();
+		while (pos < expr.length && (expr[pos] === "+" || expr[pos] === "-")) {
+			var op = expr[pos++];
+			var rhs = parseTerm();
+			val = op === "+" ? val + rhs : val - rhs;
+		}
+		return val;
+	}
+	function parseTerm() {
+		var val = parseUnary();
+		while (pos < expr.length && (expr[pos] === "*" || expr[pos] === "/")) {
+			var op = expr[pos++];
+			var rhs = parseUnary();
+			val = op === "*" ? val * rhs : val / rhs;
+		}
+		return val;
+	}
+	function parseUnary() {
+		if (expr[pos] === "+") { pos++; return parseUnary(); }
+		if (expr[pos] === "-") { pos++; return -parseUnary(); }
+		return parsePrimary();
+	}
+	function parsePrimary() {
+		if (expr[pos] === "(") {
+			pos++;
+			var v = parseExpr();
+			if (expr[pos] === ")") pos++;
+			return v;
+		}
+		if (expr.slice(pos, pos + 2) === "iv") {
+			pos += 2;
+			return iv;
+		}
+		var m = expr.slice(pos).match(/^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
+		if (m) {
+			pos += m[0].length;
+			return parseFloat(m[0]);
+		}
+		return NaN;
+	}
+	var out = parseExpr();
+	return pos === expr.length ? out : NaN;
+}
 function calVal(id, iv){
-	eval("rv = (" + currentAName[id][2] + ");");
+	var rv = safeEvalConv(currentAName[id][2], iv);
 	return gnumberFormat(rv);
 }
 function calcul(){
@@ -229,8 +284,7 @@ function calcul(){
 	}
 	if ((selectFromID>0) && (isNumber(fromVal))){
 		iv = parseFloat(fromVal);
-		stdval = 0;
-		eval("stdval = " + currentAName[selectFromID][1]+ ";");
+		stdval = safeEvalConv(currentAName[selectFromID][1], iv);
 
 		document.calForm.calTo.length = 0;
 		for(i=1; i<currentAName.length; i++){
@@ -239,7 +293,7 @@ function calcul(){
 			if (selectToID == i) {
 				selectTo.options[(i-1)].selected = true;
 				document.calForm.toVal.value = tempVal;
-				gObj("fcresult").innerHTML = "<font color='red'><b>Result:</b></font> " + fromVal + " " + selectFromVal + " = " + tempVal + " " + currentAName[i][0];
+				gObj("fcresult").innerHTML = "<font color='red'><b>Result:</b></font> " + escapeConvHtml(fromVal) + " " + escapeConvHtml(selectFromVal) + " = " + escapeConvHtml(tempVal) + " " + escapeConvHtml(currentAName[i][0]);
 			}
 		}
 	}

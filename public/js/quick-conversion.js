@@ -135,8 +135,17 @@ function ucvtCalcFuel() {
   else if (toU === "lp100") res = 235.214583 / mpg;
   else if (toU === "mpguk") res = mpg * 1.20095;
 
+  function escapeQuickHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   var names = { mpg: "MPG (US)", kmpl: "km/L", lp100: "L/100km", mpguk: "MPG (UK)" };
-  out.innerHTML = '<b>Result:</b> ' + val + ' ' + names[fromU] + ' = <b>' + ucvtFormat(res) + '</b> ' + names[toU];
+  out.innerHTML = '<b>Result:</b> ' + escapeQuickHtml(val) + ' ' + escapeQuickHtml(names[fromU] || fromU) + ' = <b>' + escapeQuickHtml(ucvtFormat(res)) + '</b> ' + escapeQuickHtml(names[toU] || toU);
   return false;
 }
 
@@ -155,7 +164,7 @@ function ucvtCalcGroup(key) {
   var ti = parseInt(toEl ? toEl.value : entry.defTo, 10);
   if (!isNaN(num) && list[fi] && list[ti]) {
     var result = (num * list[fi][1]) / list[ti][1];
-    out.innerHTML = '<b>Result:</b> ' + raw + ' ' + list[fi][0] + ' = <b>' + ucvtFormat(result) + '</b> ' + list[ti][0];
+    out.innerHTML = '<b>Result:</b> ' + escapeQuickHtml(raw) + ' ' + escapeQuickHtml(list[fi][0]) + ' = <b>' + escapeQuickHtml(ucvtFormat(result)) + '</b> ' + escapeQuickHtml(list[ti][0]);
   } else {
     out.innerHTML = (raw || "").trim() ? '<span style="color:#ef4444;">Please provide a valid number!</span>' : "";
   }

@@ -56,24 +56,88 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
 
         const toRad = angleMode === "deg" ? Math.PI / 180 : 1;
         const fromRad = angleMode === "deg" ? 180 / Math.PI : 1;
-        const _sin = (x: number) => Math.sin(x * toRad);
-        const _cos = (x: number) => Math.cos(x * toRad);
-        const _tan = (x: number) => Math.tan(x * toRad);
-        const _asin = (x: number) => Math.asin(x) * fromRad;
-        const _acos = (x: number) => Math.acos(x) * fromRad;
-        const _atan = (x: number) => Math.atan(x) * fromRad;
-        const _fact = (n: number) => {
-          if (n < 0 || !Number.isInteger(n) || n > 170) return NaN;
-          let f = 1;
-          for (let i = 2; i <= n; i++) f *= i;
-          return f;
+        const fns: Record<string, (x: number) => number> = {
+          _sin: (x) => Math.sin(x * toRad),
+          _cos: (x) => Math.cos(x * toRad),
+          _tan: (x) => Math.tan(x * toRad),
+          _asin: (x) => Math.asin(x) * fromRad,
+          _acos: (x) => Math.acos(x) * fromRad,
+          _atan: (x) => Math.atan(x) * fromRad,
+          "Math.log10": (x) => Math.log10(x),
+          "Math.log": (x) => Math.log(x),
+          "Math.sqrt": (x) => Math.sqrt(x),
+          "Math.cbrt": (x) => Math.cbrt(x),
+          _fact: (n) => {
+            if (n < 0 || !Number.isInteger(n) || n > 170) return NaN;
+            let f = 1;
+            for (let i = 2; i <= n; i++) f *= i;
+            return f;
+          },
         };
 
-        const fn = Function(
-          "_sin", "_cos", "_tan", "_asin", "_acos", "_atan", "_fact",
-          `"use strict"; return (${clean})`
-        );
-        const res = fn(_sin, _cos, _tan, _asin, _acos, _atan, _fact);
+        // Recursive-descent math expression evaluator (CSP-safe, no eval/Function)
+        let pos = 0;
+        const s = clean.replace(/\s+/g, "");
+        const parseExpr = (): number => {
+          let val = parseTerm();
+          while (pos < s.length && (s[pos] === "+" || s[pos] === "-")) {
+            const op = s[pos++];
+            const rhs = parseTerm();
+            val = op === "+" ? val + rhs : val - rhs;
+          }
+          return val;
+        };
+        const parseTerm = (): number => {
+          let val = parsePower();
+          while (pos < s.length && (s[pos] === "*" || s[pos] === "/") && !(s[pos] === "*" && s[pos + 1] === "*")) {
+            const op = s[pos++];
+            const rhs = parsePower();
+            val = op === "*" ? val * rhs : val / rhs;
+          }
+          return val;
+        };
+        const parsePower = (): number => {
+          const base = parseUnary();
+          if (s.slice(pos, pos + 2) === "**") {
+            pos += 2;
+            return Math.pow(base, parsePower());
+          }
+          return base;
+        };
+        const parseUnary = (): number => {
+          if (s[pos] === "+") { pos++; return parseUnary(); }
+          if (s[pos] === "-") { pos++; return -parseUnary(); }
+          return parsePrimary();
+        };
+        const parsePrimary = (): number => {
+          if (s[pos] === "(") {
+            pos++;
+            const v = parseExpr();
+            if (s[pos] !== ")") throw new Error("Unbalanced paren");
+            pos++;
+            return v;
+          }
+          const numMatch = s.slice(pos).match(/^(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/i);
+          if (numMatch) {
+            pos += numMatch[0].length;
+            return Number(numMatch[0]);
+          }
+          if (s.startsWith("Math.PI", pos)) { pos += 7; return Math.PI; }
+          if (s.startsWith("Math.E", pos)) { pos += 6; return Math.E; }
+          for (const key of Object.keys(fns)) {
+            if (s.startsWith(key + "(", pos)) {
+              pos += key.length + 1;
+              const arg = parseExpr();
+              if (s[pos] !== ")") throw new Error("Missing closing paren");
+              pos++;
+              return fns[key](arg);
+            }
+          }
+          throw new Error("Unexpected token");
+        };
+
+        const res = parseExpr();
+        if (pos !== s.length) return NaN;
         if (typeof res === "number" && !isNaN(res) && isFinite(res)) {
           return res;
         }
@@ -263,10 +327,11 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
     <div className="modern-calc-card">
       {/* Top Header: Deg/Rad Switcher + Mode Toggle */}
       <div className="calc-top-bar">
-        <div className="calc-mode-group">
+        <div className="calc-mode-group" role="group" aria-label="Angle unit">
           <button
             type="button"
             onClick={() => setAngleMode("deg")}
+            aria-pressed={angleMode === "deg"}
             className={`calc-mode-btn ${angleMode === "deg" ? "active" : ""}`}
           >
             DEG
@@ -274,17 +339,19 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
           <button
             type="button"
             onClick={() => setAngleMode("rad")}
+            aria-pressed={angleMode === "rad"}
             className={`calc-mode-btn ${angleMode === "rad" ? "active" : ""}`}
           >
             RAD
           </button>
         </div>
 
-        <div className="calc-tab-group">
+        <div className="calc-tab-group" role="group" aria-label="Calculator mode">
           {memory !== 0 && <span className="calc-mem-indicator">M={memory}</span>}
           <button
             type="button"
             onClick={() => setActiveTab("standard")}
+            aria-pressed={activeTab === "standard"}
             className={`calc-tab-btn ${activeTab === "standard" ? "active" : ""}`}
           >
             Standard
@@ -292,6 +359,7 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
           <button
             type="button"
             onClick={() => setActiveTab("scientific")}
+            aria-pressed={activeTab === "scientific"}
             className={`calc-tab-btn ${activeTab === "scientific" ? "active" : ""}`}
           >
             Scientific
@@ -304,7 +372,7 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
         <div className="calc-expression-preview" id="sciInPut">
           {expr || "\u00A0"}
         </div>
-        <div className="calc-main-output" id="sciOutPut">
+        <div className="calc-main-output" id="sciOutPut" aria-live="polite">
           {display}
         </div>
       </div>

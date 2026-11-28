@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# All-in-one-calculator
 
-## Getting Started
+A fast, privacy-first web suite of **215+ free online calculators** across Financial, Fitness & Health, Math & Science, and Everyday Utilities — built with **Next.js 16 (App Router)**, **React 19**, **TypeScript**, and **Tailwind CSS v4**.
 
-First, run the development server:
+## Architecture Overview
+
+- **Static / SSG Calculator Routes**: `app/[slug]/page.tsx` pre-renders all 215 calculator pages from `data/calculators-index.json` and `data/calculators/<slug>.json`, validated via an allowlist and path-containment guard in `lib/calculators.ts`.
+- **Category Hubs & Navigation**: Dedicated hub pages (`/financial-calculator`, `/fitness-and-health-calculator`, `/math-calculator`, `/other-calculator`), live search (`SearchBox`), `Ctrl/Cmd+K` command palette (`CommandPalette`), and `localStorage`-backed history & starred favorites (`HistoryFavoritesModal`).
+- **CSP-Safe Client Engines**: `public/js/calc-engines.js`, `public/js/conversion.js`, `public/js/quick-conversion.js`, `public/js/common.js`, and `components/ScientificCalculator.tsx` evaluate math and unit conversions with recursive-descent parsers (no `eval()` or `Function()`).
+- **Security & PWA**: `next.config.ts` sets security headers (`CSP`, `HSTS`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`); `/api/health` exposes service health; `public/sw.js` provides offline shell caching.
+
+## Local Development
+
+### Prerequisites
+
+- Node.js `>= 20` (tested on Node `22.x`)
+- `npm`
+
+### Setup
 
 ```bash
+cd calculator-updated
+npm ci
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | Optional | `https://all-in-one-calculator.vercel.app` | Canonical origin for `metadataBase`, OpenGraph metadata, and `robots.txt` sitemap URL |
 
-## Learn More
+## Available Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Script | Command | Description |
+| --- | --- | --- |
+| `dev` | `npm run dev` | Start Next.js development server |
+| `build` | `npm run build` | Production Webpack build (`next build --webpack`) |
+| `start` | `npm run start` | Serve production build |
+| `lint` | `npm run lint` | Run ESLint across app & components |
+| `typecheck` | `npm run typecheck` | Run TypeScript compiler check (`tsc --noEmit`) |
+| `test` | `npm test` | Run all 51 unit, engine accuracy, and security tests |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment (Vercel)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Set **Root Directory** to `calculator-updated`.
+2. Framework preset: **Next.js**.
+3. Optional environment variable: `NEXT_PUBLIC_SITE_URL=https://all-in-one-calculator.vercel.app`.
+4. Health check endpoint: `GET /api/health` returns `{ status: "ok", calculatorCount: 215, ... }`.

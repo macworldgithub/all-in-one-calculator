@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface CalculatorBodyProps {
   slug: string;
@@ -16,6 +16,8 @@ export default function CalculatorBody({
   externalScripts,
 }: CalculatorBodyProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -60,12 +62,18 @@ export default function CalculatorBody({
         onCalculatorMount?: (s: string) => void;
       };
       let attempts = 0;
-      while ((typeof w.gObj !== "function" || typeof w.runCalculator !== "function") && attempts < 60) {
+      while ((typeof w.gObj !== "function" || typeof w.runCalculator !== "function") && attempts < 100) {
         if (cancelled) return;
-        await new Promise((r) => setTimeout(r, 50));
+        await new Promise((r) => setTimeout(r, 60));
         attempts++;
       }
       if (cancelled) return;
+
+      if (typeof w.gObj !== "function" || typeof w.runCalculator !== "function") {
+        setLoadError(true);
+        return;
+      }
+      setLoadError(false);
 
       if (typeof w.prepareCalculatorMount === "function") {
         try {
@@ -110,16 +118,54 @@ export default function CalculatorBody({
       injectedNodes.forEach((node) => {
         if (node.parentNode) node.parentNode.removeChild(node);
       });
+      // Clean up legacy hover tooltips across route transitions
+      const svgTip = document.getElementById("ttvsbartt");
+      if (svgTip) svgTip.style.display = "none";
+      const textTip = document.getElementById("tt");
+      if (textTip) textTip.style.display = "none";
     };
-  }, [slug, cleanHtml, inlineScripts, externalScripts]);
+  }, [slug, cleanHtml, inlineScripts, externalScripts, retryCount]);
 
   return (
-    <div
-      id="content"
-      ref={containerRef}
-      className="calc-body-html"
-      suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: cleanHtml }}
-    />
+    <>
+      {loadError && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: "14px",
+            padding: "12px 16px",
+            borderRadius: "8px",
+            background: "rgba(239, 68, 68, 0.12)",
+            border: "1px solid rgba(239, 68, 68, 0.35)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "12px",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "14px" }}>
+            Calculation engine scripts took too long to load.
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setLoadError(false);
+              setRetryCount((c) => c + 1);
+            }}
+            className="popular-chip"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      <div
+        id="content"
+        ref={containerRef}
+        className="calc-body-html"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: cleanHtml }}
+      />
+    </>
   );
 }
