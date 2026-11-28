@@ -16,7 +16,7 @@ import {
   MoonIcon,
   SunIcon,
 } from "./Icons";
-import ThemeToggle, { applyTheme, type ThemeMode } from "./ThemeToggle";
+import ThemeToggle, { applyTheme, subscribeTheme, getClientTheme, getServerTheme, type ThemeMode } from "./ThemeToggle";
 
 const emptySubscribe = () => () => {};
 
@@ -25,11 +25,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
-  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") return "dark";
-    const saved = localStorage.getItem("allinone_theme") as ThemeMode | null;
-    return saved === "light" ? "light" : "dark";
-  });
+  const currentTheme = useSyncExternalStore(subscribeTheme, getClientTheme, getServerTheme);
 
   // Close mobile menu on page navigation
   if (pathname !== prevPathname) {
@@ -58,23 +54,9 @@ export default function Navbar() {
     };
   }, [mobileMenuOpen]);
 
-  // Keep track of current theme for mobile drawer switcher
-  useEffect(() => {
-    const onThemeChange = (e: Event) => {
-      const customEvent = e as CustomEvent<{ theme: ThemeMode }>;
-      if (customEvent.detail && customEvent.detail.theme) {
-        setCurrentTheme(customEvent.detail.theme);
-      }
-    };
-    window.addEventListener("theme-changed", onThemeChange);
-    return () => window.removeEventListener("theme-changed", onThemeChange);
-  }, []);
-
   const setDrawerTheme = (mode: ThemeMode) => {
-    setCurrentTheme(mode);
     localStorage.setItem("allinone_theme", mode);
     applyTheme(mode);
-    window.dispatchEvent(new CustomEvent("set-theme", { detail: { theme: mode } }));
     window.dispatchEvent(new CustomEvent("theme-changed", { detail: { theme: mode } }));
   };
 

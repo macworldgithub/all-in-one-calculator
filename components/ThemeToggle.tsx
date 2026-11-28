@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useSyncExternalStore } from "react";
 import { SunIcon, MoonIcon } from "./Icons";
 
 export type ThemeMode = "light" | "dark";
@@ -19,12 +19,26 @@ export function applyTheme(mode: ThemeMode) {
   }
 }
 
+export function subscribeTheme(callback: () => void) {
+  window.addEventListener("theme-changed", callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener("theme-changed", callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+export function getClientTheme(): ThemeMode {
+  if (typeof window === "undefined") return "dark";
+  return localStorage.getItem("allinone_theme") === "light" ? "light" : "dark";
+}
+
+export function getServerTheme(): ThemeMode {
+  return "dark";
+}
+
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") return "dark";
-    const saved = localStorage.getItem("allinone_theme") as ThemeMode | null;
-    return saved === "light" ? "light" : "dark";
-  });
+  const theme = useSyncExternalStore(subscribeTheme, getClientTheme, getServerTheme);
 
   useEffect(() => {
     applyTheme(theme);
@@ -32,9 +46,9 @@ export default function ThemeToggle() {
     const onCustomTheme = (e: Event) => {
       const customEvent = e as CustomEvent<{ theme: ThemeMode }>;
       if (customEvent.detail && customEvent.detail.theme) {
-        setTheme(customEvent.detail.theme);
         localStorage.setItem("allinone_theme", customEvent.detail.theme);
         applyTheme(customEvent.detail.theme);
+        window.dispatchEvent(new CustomEvent("theme-changed", { detail: { theme: customEvent.detail.theme } }));
       }
     };
     window.addEventListener("set-theme", onCustomTheme);
@@ -43,7 +57,6 @@ export default function ThemeToggle() {
 
   const toggleTheme = () => {
     const next: ThemeMode = theme === "dark" ? "light" : "dark";
-    setTheme(next);
     localStorage.setItem("allinone_theme", next);
     applyTheme(next);
     window.dispatchEvent(new CustomEvent("theme-changed", { detail: { theme: next } }));

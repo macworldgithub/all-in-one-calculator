@@ -112,3 +112,36 @@ function updateDateInput(name) {
     hidden.value = (mm < 10 ? '0' + mm : mm) + '/' + (dd < 10 ? '0' + dd : dd) + '/' + yyyy;
   }
 }
+
+function formatDate(date, fmt) {
+  var d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) d = new Date();
+  var pad = function (n) { return n < 10 ? '0' + n : String(n); };
+  var map = {
+    yyyy: String(d.getFullYear()),
+    MM: pad(d.getMonth() + 1),
+    dd: pad(d.getDate()),
+    HH: pad(d.getHours()),
+    hh: pad(d.getHours() % 12 || 12),
+    mm: pad(d.getMinutes()),
+    ss: pad(d.getSeconds())
+  };
+  return String(fmt || 'yyyy-MM-dd HH:mm:ss').replace(/yyyy|MM|dd|HH|hh|mm|ss/g, function (k) {
+    return map[k];
+  });
+}
+
+if (typeof window !== 'undefined' && typeof window.$ === 'undefined') {
+  window.$ = function (arg) {
+    if (typeof arg === 'function') {
+      setTimeout(function () { try { arg(); } catch (e) {} }, 0);
+      return;
+    }
+    return {
+      highcharts: function () { return this; },
+      on: function () { return this; },
+      show: function () { return this; },
+      hide: function () { return this; }
+    };
+  };
+}

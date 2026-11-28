@@ -1,1 +1,9 @@
-{"slug": "projects", "title": "Mobile Apps and Plugins", "h1": "Mobile Apps and Plugins", "category": "other", "categoryTitle": "Other Calculators", "description": "Calculator related mobile apps, plugins for wordpress, and desktop applications.", "html": "<div class=\"smalltext\"><a href=\"/\">Home</a> / <a href=\"/projects/\">plugins</a></div>\n<h1>Mobile Apps and Plugins</h1>\n<h2>Wordpress Plugins</h2>\n<p>We have the following wordpress plugins available. All of these are free under the <a href=\"/https://www.gnu.org/licenses/gpl-3.0\">GNU GPL license</a>.</p>\n<ul>\n<li><a href=\"/bmi-calculator-widget.php\">BMI Calculator</a></li>\n<li><a href=\"/love-calculator-widget.php\">Love Calculator</a></li>\n<li><a href=\"/math-calculator-widget.php\">Math Calculator</a></li>\n<li><a href=\"/mortgage-calculator-widget.php\">Mortgage Loan Calculator</a></li>\n</ul>"}
+{
+  "slug": "projects",
+  "title": "Mobile Apps and Plugins",
+  "h1": "Mobile Apps and Plugins",
+  "category": "other",
+  "categoryTitle": "Other Calculators",
+  "description": "Calculator related mobile apps, plugins for wordpress, and desktop applications.",
+  "html": "<div class=\"smalltext\"><a href=\"/\">Home</a> / <a href=\"/projects\">plugins</a></div>\n<h1>Mobile Apps and Plugins</h1>\n<h2>Wordpress Plugins</h2>\n<p>We have the following wordpress plugins available. All of these are free under the <a href=\"https://www.gnu.org/licenses/gpl-3.0\" target=\"_blank\" rel=\"noopener noreferrer\">GNU GPL license</a>.</p>\n<ul>\n<li><a href=\"/bmi-calculator\">BMI Calculator</a></li>\n<li><a href=\"/love-calculator\">Love Calculator</a></li>\n<li><a href=\"/math-calculator\">Math Calculator</a></li>\n<li><a href=\"/mortgage-calculator\">Mortgage Loan Calculator</a></li>\n</ul>"
+}

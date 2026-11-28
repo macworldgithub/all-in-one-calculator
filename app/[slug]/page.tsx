@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Sidebar from "@/components/Sidebar";
 import ScientificCalculator from "@/components/ScientificCalculator";
+import CalculatorBody from "@/components/CalculatorBody";
 import { getCalculatorsIndex, getCalculatorBySlug } from "@/lib/calculators";
 import { MathIcon } from "@/components/Icons";
 
@@ -82,13 +83,30 @@ export default async function CalculatorPage({ params }: PageProps) {
                 <ScientificCalculator defaultMode={slug === "basic-calculator" ? "standard" : "scientific"} />
               </div>
             </div>
-          ) : (
-            <div
-              id="content"
-              className="calc-body-html"
-              dangerouslySetInnerHTML={{ __html: calc.html }}
-            />
-          )}
+          ) : (() => {
+            const inlineScripts: string[] = [];
+            const externalScripts: string[] = [];
+            const cleanHtml = calc.html.replace(
+              /<script\b([^>]*)>([\s\S]*?)<\/script>/gi,
+              (_full, attrs: string, body: string) => {
+                const srcMatch = attrs.match(/src=["']([^"']+)["']/i);
+                if (srcMatch && srcMatch[1]) {
+                  externalScripts.push(srcMatch[1]);
+                } else if (body && body.trim()) {
+                  inlineScripts.push(body);
+                }
+                return "";
+              }
+            );
+            return (
+              <CalculatorBody
+                slug={slug}
+                cleanHtml={cleanHtml}
+                inlineScripts={inlineScripts}
+                externalScripts={externalScripts}
+              />
+            );
+          })()}
         </article>
 
         <aside className="calc-sidebar-aside">

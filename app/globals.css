@@ -9,6 +9,8 @@
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -18,7 +20,8 @@ body {
   background-color: var(--bg-page);
   color: var(--text-primary);
   min-height: 100vh;
-  overflow-x: hidden;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 /* Modern date input group layout */

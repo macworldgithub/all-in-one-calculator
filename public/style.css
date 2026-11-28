@@ -1081,28 +1081,38 @@ input[type="number"].in4char.inpct {
 }
 
 /* Compound multi-input cells on desktop (Years + Months, Feet + Inches) */
-input.inuiyear,
-input.inuipound,
-input.inuiyearpound,
-input.inuifoot,
-input.inuiinch,
-input.inuick,
-input.inui1c,
-.panel td:has(.inuiyearspan) input:not(.indollar):not(.inpct),
-.panel td:has(.inuipoundspan) input:not(.indollar):not(.inpct),
-.panel td:has(.inuifootspan) input:not(.indollar):not(.inpct),
-.panel td:has(.inuiinchspan) input:not(.indollar):not(.inpct),
-.panel td[nowrap] input:not(.indollar):not(.inpct),
-#content td:has(.inuiyearspan) input:not(.indollar):not(.inpct),
-#content td:has(.inuipoundspan) input:not(.indollar):not(.inpct),
-#content td:has(.inuifootspan) input:not(.indollar):not(.inpct),
-#content td:has(.inuiinchspan) input:not(.indollar):not(.inpct),
-#content td[nowrap] input:not(.indollar):not(.inpct) {
+input.inuiyear:not(.inlonger):not(.inlongest):not(.indollar),
+input.inuipound:not(.inlonger):not(.inlongest):not(.indollar),
+input.inuiyearpound:not(.inlonger):not(.inlongest):not(.indollar),
+input.inuifoot:not(.inlonger):not(.inlongest):not(.indollar),
+input.inuiinch:not(.inlonger):not(.inlongest):not(.indollar),
+input.inuick:not(.inlonger):not(.inlongest):not(.indollar),
+input.inui1c:not(.inlonger):not(.inlongest):not(.indollar),
+.panel td:has(.inuiyearspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+.panel td:has(.inuipoundspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+.panel td:has(.inuifootspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+.panel td:has(.inuiinchspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+.panel td[nowrap] input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+#content td:has(.inuiyearspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+#content td:has(.inuipoundspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+#content td:has(.inuifootspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+#content td:has(.inuiinchspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
+#content td[nowrap] input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest) {
   width: 86px !important;
   max-width: 86px !important;
   min-width: 76px !important;
   display: inline-block !important;
   vertical-align: middle !important;
+}
+
+/* Single wide inputs carrying both $ and unit suffix (e.g. student-loan cmonthlypay) */
+input.inlonger.indollar.inuipound,
+#content input.inlonger.indollar.inuipound,
+input.inlonger.inuipound,
+#content input.inlonger.inuipound {
+  width: 210px !important;
+  min-width: 175px !important;
+  max-width: 100% !important;
 }
 
 /* Guarantee currency and percentage inputs always provide visible typing space */
@@ -4507,12 +4517,12 @@ html.light input.inpct,
     gap: 8px !important;
   }
 
-  .panel td[nowrap] input,
-  #content td[nowrap] input,
-  .panel td:has(.inuiyearspan) input,
-  .panel td:has(.inuipoundspan) input,
-  .panel td:has(.inuifootspan) input,
-  .panel td:has(.inuiinchspan) input {
+  .panel td[nowrap] input:not(.inlonger):not(.inlongest):not(.indollar),
+  #content td[nowrap] input:not(.inlonger):not(.inlongest):not(.indollar),
+  .panel td:has(.inuiyearspan) input:not(.inlonger):not(.inlongest):not(.indollar),
+  .panel td:has(.inuipoundspan) input:not(.inlonger):not(.inlongest):not(.indollar),
+  .panel td:has(.inuifootspan) input:not(.inlonger):not(.inlongest):not(.indollar),
+  .panel td:has(.inuiinchspan) input:not(.inlonger):not(.inlongest):not(.indollar) {
     width: 86px !important;
     max-width: 95px !important;
     min-width: 78px !important;
@@ -4554,4 +4564,436 @@ html.dark #content tr[bgcolor="#fff"] {
   background: var(--bg-card-subtle) !important;
   background-color: var(--bg-card-subtle) !important;
   color: var(--text-primary) !important;
+}
+
+/* ==========================================================================
+   MARKET-READY POLISH: MATRIX UI, DARK MODE CONTRAST, SVG CHARTS &
+   UNIVERSAL MULTI-COLUMN MOBILE RESPONSIVENESS
+   ========================================================================== */
+
+/* 1. Matrix Calculator Controls & Directional Arrows */
+#sectitle {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+.arrow-up, .arrow-down, .arrow-left, .arrow-right {
+  width: 26px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 700;
+  user-select: none;
+  transition: all 0.12s ease;
+}
+.arrow-up:hover, .arrow-down:hover, .arrow-left:hover, .arrow-right:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.arrow-up::after { content: "▲"; }
+.arrow-down::after { content: "▼"; }
+.arrow-left::after { content: "◀"; }
+.arrow-right::after { content: "▶"; }
+
+#txtbtn {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 !important;
+}
+#txtbtn a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 14px;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+#txtbtn a:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+/* 2. Global Responsive Fluidity & Anti-Overflow (Desktop, Tablet & Mobile) */
+.calc-page-container,
+.calc-main-content,
+.calc-sidebar-aside,
+#content,
+.modern-article-card,
+.rightresult,
+.crighthalf,
+.leftinput,
+.clefthalf {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+#content svg,
+.modern-article-card svg {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+#content img:not(.ttimg) {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Wide data/amortization tables stay scrollable without overflowing viewport */
+@media (max-width: 1024px) {
+  .cinfo,
+  table.cinfoT {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
+  }
+
+  #content td[style*="white-space: nowrap"],
+  .panel td[style*="white-space: nowrap"] {
+    white-space: normal !important;
+  }
+}
+
+/* 3. Dark Mode High-Contrast Fixes for Inline Result Highlights & SVG Charts */
+html.dark #content [style*="background:#eaf2e8"],
+html.dark #content [style*="background: #eaf2e8"],
+html.dark .cinfoT tr[style*="background:#eaf2e8"],
+html.dark .cinfoT tr[style*="background: #eaf2e8"],
+[data-theme="dark"] #content [style*="background:#eaf2e8"],
+[data-theme="dark"] .cinfoT tr[style*="background:#eaf2e8"] {
+  background: rgba(16, 185, 129, 0.15) !important;
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+html.dark #content [style*="background:#eaf2e8"] td,
+html.dark #content [style*="background: #eaf2e8"] td,
+[data-theme="dark"] #content [style*="background:#eaf2e8"] td {
+  color: #f8fafc !important;
+}
+
+html.dark #content input[readonly],
+html.dark #content input[style*="background-color:#eee"],
+html.dark #content input[style*="background-color: #eee"],
+html.dark #content table[style*="background-color: #fff"],
+html.dark #content table[style*="background-color:#fff"],
+[data-theme="dark"] #content input[readonly],
+[data-theme="dark"] #content table[style*="background-color: #fff"] {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+html.dark #content font[color="green"],
+html.dark .cinfoT font[color="green"],
+[data-theme="dark"] #content font[color="green"] {
+  color: #34d399 !important;
+}
+html.dark #content font[color="red"],
+html.dark .cinfoT font[color="red"],
+[data-theme="dark"] #content font[color="red"] {
+  color: #f87171 !important;
+}
+html.dark #content font[color="blue"],
+html.dark .cinfoT font[color="blue"],
+[data-theme="dark"] #content font[color="blue"] {
+  color: #60a5fa !important;
+}
+
+html.dark #content svg .mcplegend,
+html.dark #content svg .mcvsblegend,
+html.dark #content svg .mcvsbtitle,
+html.dark #content svg .mcvsblabely,
+html.dark #content svg .mcvsblabelx,
+html.dark #content svg text[fill="#0d233a"],
+html.dark #content svg text[fill="#000"],
+html.dark #content svg text[fill="#000000"],
+[data-theme="dark"] #content svg .mcplegend,
+[data-theme="dark"] #content svg .mcvsblegend,
+[data-theme="dark"] #content svg .mcvsbtitle,
+[data-theme="dark"] #content svg text[fill="#0d233a"] {
+  fill: #e2e8f0 !important;
+}
+html.dark #content svg .mcpline,
+[data-theme="dark"] #content svg .mcpline {
+  stroke: #0f172a !important;
+}
+
+/* 4. Mobile & Compact Screen Responsive Guarantees (<= 680px) */
+@media (max-width: 680px) {
+  /* Strip fixed HTML width attributes and inline pixel widths that break 320px-480px viewports */
+  #content table,
+  #content table[width],
+  #content td[width],
+  .panel table[width],
+  .panel td[width] {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Tables in #content cannot exceed viewport width; wide multi-col tables scroll cleanly inside container */
+  #content table:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(#cmoreoptioninputs):not(#ctaxcost):not(#cadditionalonetimediv table) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  #content table.panel:not(form[name="gradeform"] table):not(form[name="gpaform"] table) > tbody,
+  #content table.panel2 > tbody,
+  #content #calinputtable > tbody,
+  #content #standardheightweight > tbody,
+  #content #metricheightweight > tbody,
+  #content form[name="mileageF"] table > tbody,
+  #content form[name="calForm"] table > tbody,
+  #content form[name="calform"] > table:not(.cinfoT) > tbody,
+  #content form[name="calform2"] > table:not(.cinfoT) > tbody,
+  #content form[name="calcf2"] > table:not(.cinfoT) > tbody {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Cap inputs & selects (including inline style="width: 500px" or wide option selects like #cactivity) */
+  #content input[style*="width"]:not([type="radio"]):not([type="checkbox"]),
+  #content select[style*="width"],
+  #content select,
+  .panel select {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  #content select,
+  .panel select {
+    min-width: 0 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #content select[name*="unit"],
+  #content select[id*="unit"],
+  #ctaxcost select,
+  #cmoreoptioninputs select {
+    min-width: 72px !important;
+  }
+
+  /* Standard key-value vertical forms stack rows cleanly so wide selects/inputs stay inside 100% */
+  #content table.panel:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(#calinputtable) > tbody > tr:not(:has(td:nth-child(4))),
+  #content form[name="calcf"] table.panel > tbody > tr:not(:has(td:nth-child(4))),
+  #content form[name="calcf"] table.panel2 > tbody > tr:not(:has(td:nth-child(4))),
+  #content form[name="calform"] > table:not(.cinfoT) > tbody > tr:not(:has(td:nth-child(4))),
+  #content form[name="calform2"] > table:not(.cinfoT) > tbody > tr:not(:has(td:nth-child(4))),
+  #content form[name="calcf2"] > table:not(.cinfoT) > tbody > tr:not(:has(td:nth-child(4))),
+  #content form[name="mileageF"] table > tbody > tr {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 10px !important;
+  }
+  #content table.panel:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(#calinputtable) > tbody > tr:not(:has(td:nth-child(4))) > td,
+  #content form[name="calcf"] table.panel > tbody > tr:not(:has(td:nth-child(4))) > td,
+  #content form[name="calcf"] table.panel2 > tbody > tr:not(:has(td:nth-child(4))) > td,
+  #content form[name="calform"] > table:not(.cinfoT) > tbody > tr:not(:has(td:nth-child(4))) > td,
+  #content form[name="calform2"] > table:not(.cinfoT) > tbody > tr:not(:has(td:nth-child(4))) > td,
+  #content form[name="calcf2"] > table:not(.cinfoT) > tbody > tr:not(:has(td:nth-child(4))) > td,
+  #content form[name="mileageF"] table > tbody > tr > td {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+  #content #cactivity,
+  #content #tcfrom,
+  #content #tcto,
+  #content #fromAddress,
+  #content #toAddress {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Conversion Calculator responsive stacked layout */
+  form[name="calForm"] table,
+  form[name="calForm"] tr,
+  form[name="calForm"] td {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  form[name="calForm"] input,
+  form[name="calForm"] select {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Compound Interest & Energy Converter nested 4-6 col tables stack rows cleanly on mobile */
+  form[name="calform2"] table[cellpadding] tr,
+  form[name="calform"] table.panel table[cellpadding="5"] tr {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  form[name="calform2"] table[cellpadding] td,
+  form[name="calform"] table.panel table[cellpadding="5"] td {
+    display: block !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-align: left !important;
+  }
+  #cinevalue {
+    width: 100% !important;
+    min-width: 90px !important;
+    max-width: 100% !important;
+  }
+
+  /* Time Calculator, Time Card, Calories Burned & Half-Life Responsive Fixes */
+  form[name="calc"] tr,
+  form[name="calcf2"] table[align="center"] tr,
+  #content table[style*="padding-top:5px"] tr {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  form[name="calc"] td,
+  form[name="calcf2"] table[align="center"] td,
+  #content table[style*="padding-top:5px"] td {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex: 1 1 calc(25% - 6px) !important;
+    min-width: 58px !important;
+    max-width: 100% !important;
+    padding: 2px !important;
+    box-sizing: border-box !important;
+  }
+  #content table[style*="padding-top:5px"] td:empty,
+  #content table[style*="padding-top:5px"] td:nth-child(even):not(:last-child) {
+    flex: 0 0 auto !important;
+    min-width: 10px !important;
+    justify-content: center !important;
+  }
+  .modern-date-input-wrap {
+    flex-wrap: wrap !important;
+    max-width: 100% !important;
+  }
+
+  /* Calories Burned inline sub-tables (Speed/Pace + unit + preset links) */
+  form[action*="calories-burned"] td table[border="0"] tr {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+  form[action*="calories-burned"] td table[border="0"] td {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex: 0 1 auto !important;
+    max-width: 100% !important;
+    padding: 2px 0 !important;
+  }
+  form[action*="calories-burned"] td table[border="0"] td:empty {
+    display: none !important;
+  }
+  form[action*="calories-burned"] td table[border="0"] input.inhalf {
+    min-width: 78px !important;
+  }
+
+  /* Day Counter unit-badged input preserves usable room next to "days" */
+  #content input.inlonger.inuiyear {
+    min-width: 130px !important;
+  }
+
+  /* Multi-column data entry grids (e.g. Golf Handicap 7-col table) keep inputs readable */
+  #content tr:has(td:nth-child(5)) input.innormal,
+  #content form[action*="golf-handicap-calculator"] table[bgcolor="#eeeeee"] input.innormal {
+    min-width: 68px !important;
+  }
+
+  /* Pythagorean Theorem nested sqrt sub-table & Scientific Notation base+exp row */
+  #content table.panel table[border="0"] input.innormal {
+    min-width: 110px !important;
+    width: 110px !important;
+  }
+  #content form[name="calform2"] table.panel table input.inlonger {
+    width: 115px !important;
+    min-width: 90px !important;
+  }
+  #content form[name="calform2"] table.panel table input.innormal {
+    width: 72px !important;
+    min-width: 64px !important;
+  }
+
+  /* Half-Life 3-4 column input tables fit cleanly within mobile container */
+  form[action*="half-life-calculator"] table[cellpadding="2"] input.inlong {
+    width: 100% !important;
+    min-width: 60px !important;
+    padding: 8px 6px !important;
+  }
+
+  /* Time Card outer container scrolls table cleanly & stacks lower settings */
+  form[name="timecardform"] {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  form[name="timecardform"] input.inlonger {
+    width: 100px !important;
+    min-width: 82px !important;
+  }
+  form[name="timecardform"] input.innormal {
+    width: 74px !important;
+    min-width: 64px !important;
+  }
+  form[name="timecardform"] table[cellpadding="5"] tr {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+  form[name="timecardform"] table[cellpadding="5"] td {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Compact numeric inputs (.in2char, .in3char, .in4char & time inputs) */
+  #content input.in2char,
+  #content input.in3char,
+  #content input.in4char:not(.inpct),
+  form[name="calc"] input.innormal,
+  form[name="calcf2"] input.innormal {
+    padding: 8px 6px !important;
+    min-width: 52px !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
 }

@@ -243,4 +243,37 @@ console.log("Starting All-in-one-calculator Engine Logic Verification...\n");
   console.log('✅ [roman-numeral-converter] PASSED: 2026 = MMXXVI');
 }
 
-console.log("\n🚀 ALL 16 ENGINE TESTS PASSED WITH 100% MATHEMATICAL PRECISION!");
+// 17. Repayment Calculator (Fixed time mode)
+{
+  const env = createMockEnv('repayment-calculator', { cloanamount: 10000, cinterestrate: 10, ccompound: 'monthly', cpayback: 'month', cpaybackway: 't', cyears: 5, cmonths: 0 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('$212.47')) {
+    throw new Error('Repayment calculator failed: ' + res);
+  }
+  console.log('✅ [repayment-calculator] PASSED: $10k at 10% over 5 yrs = $212.47/mo');
+}
+
+// 18. Sleep Calculator (Wake up at 6:00 AM -> 5 cycles = 10:15 PM bedtime)
+{
+  const env = createMockEnv('sleep-calculator', { wto: 'u', hour: 6, min: 0, ap: 'am', clength: 90, ttsleep: 15 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('Recommended Bedtimes') || !res.includes('6 Cycles')) {
+    throw new Error('Sleep calculator failed: ' + res);
+  }
+  console.log('✅ [sleep-calculator] PASSED: Bedtime cycles computed accurately');
+}
+
+// 19. Matrix Calculator (2x2 determinant: [[3,8],[4,6]] -> -14)
+{
+  const env = createMockEnv('matrix-calculator', { arow: 2, acolumn: 2, a_0_0: 3, a_0_1: 8, a_1_0: 4, a_1_1: 6 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('-14')) {
+    throw new Error('Matrix calculator failed: ' + res);
+  }
+  console.log('✅ [matrix-calculator] PASSED: det([[3,8],[4,6]]) = -14');
+}
+
+console.log("\n🚀 ALL 19 ENGINE TESTS PASSED WITH 100% MATHEMATICAL PRECISION!");

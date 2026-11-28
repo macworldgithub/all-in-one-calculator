@@ -91,19 +91,24 @@
       }
       tooltip.innerHTML = htmlContent;
       tooltip.style.display = 'block';
-      if (evt.pageX > (window.innerWidth / 2)) {
-        tooltip.style.left = (evt.pageX - 10 - tooltip.offsetWidth) + 'px';
-      } else {
-        tooltip.style.left = (evt.pageX + 16) + 'px';
-      }
-      tooltip.style.top = (evt.pageY) + 'px';
-      tooltip.style.backgroundColor = color;
+      tooltip.style.maxWidth = 'min(260px, 85vw)';
+      var leftPos = (evt.pageX > (window.innerWidth / 2))
+        ? (evt.pageX - 10 - tooltip.offsetWidth)
+        : (evt.pageX + 16);
+      leftPos = Math.max(8, Math.min(leftPos, window.innerWidth - tooltip.offsetWidth - 8));
+      tooltip.style.left = leftPos + 'px';
+      tooltip.style.top = Math.max(8, evt.pageY - 10) + 'px';
+      tooltip.style.backgroundColor = color || '#1e293b';
     };
 
     window.ttvsbarHideTT = function () {
       var tooltip = document.getElementById('ttvsbartt');
       if (tooltip) tooltip.style.display = 'none';
     };
+
+    // Universal aliases for all inline SVG chart tooltip handlers
+    window.ttlineShowTT = window.ttline2ShowTT = window.ttpieShowTT = window.ttpie2ShowTT = window.ttpie3ShowTT = window.ttvbarShowTT = window.ttvsbarShowTT;
+    window.ttlineHideTT = window.ttline2HideTT = window.ttpieHideTT = window.ttpie2HideTT = window.ttpie3HideTT = window.ttvbarHideTT = window.ttvsbarHideTT;
 
     // Global Scientific Calculator command handler for onclick="r('...')"
     var sciExpr = '';
@@ -2656,8 +2661,8 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Student Loan Calculator & Repayment Calculator
-  engines['student-loan-calculator'] = engines['repayment-calculator'] = engines['payment-calculator'] = function () {
+  // Student Loan Calculator & Payment Calculator
+  engines['student-loan-calculator'] = engines['payment-calculator'] = function () {
     var loan = getFloat('cloanamount', 30000) || getFloat('cloanamount1', 30000);
     var term = getFloat('cloanterm', 10) || getFloat('cloanterm1', 10);
     var rate = getFloat('cinterestrate', 6.8) || getFloat('cinterestrate1', 6.8);
@@ -2680,6 +2685,92 @@ engines['grade-calculator'] = function () {
         <tr><td>Total Repayment Amount</td><td align="right"><b>${fmtMoney(total)}</b></td></tr>
       </table>
     `;
+  };
+
+  // Repayment Calculator (supports both fixed time and fixed installment modes)
+  var PAYBACK_META = {
+    daily: { perYear: 365, label: 'every day' },
+    weekly: { perYear: 52, label: 'every week' },
+    biweekly: { perYear: 26, label: 'every 2 weeks' },
+    halfmonth: { perYear: 24, label: 'every half month' },
+    month: { perYear: 12, label: 'every month' },
+    quarter: { perYear: 4, label: 'every quarter' },
+    halfyear: { perYear: 2, label: 'every 6 months' },
+    year: { perYear: 1, label: 'every year' }
+  };
+  var COMPOUND_PER_YEAR = {
+    annually: 1, semiannually: 2, quarterly: 4, monthly: 12,
+    semimonthly: 24, biweekly: 26, weekly: 52, daily: 365, continuously: 0
+  };
+  if (typeof window !== 'undefined') {
+    window.switchPaybackTerm = function (val) {
+      var lbl = document.getElementById('cpaybackwayamountterm');
+      if (lbl && PAYBACK_META[val]) lbl.textContent = PAYBACK_META[val].label;
+    };
+    window.switchPaybackWay = function (way) {
+      var tTbl = document.getElementById('cpaybackwayterm');
+      var aTbl = document.getElementById('cpaybackwayamount');
+      if (tTbl) tTbl.style.opacity = way === 'a' ? '0.55' : '1';
+      if (aTbl) aTbl.style.opacity = way === 't' ? '0.55' : '1';
+    };
+  }
+  engines['repayment-calculator'] = function () {
+    var loan = getFloat('cloanamount', 10000);
+    var rate = getFloat('cinterestrate', 10);
+    var compKey = String(getIn('ccompound', 'monthly'));
+    var pbKey = String(getIn('cpayback', 'month'));
+    var way = String(getIn('cpaybackway', 't'));
+
+    var pb = PAYBACK_META[pbKey] || PAYBACK_META.month;
+    var compN = COMPOUND_PER_YEAR[compKey];
+    var nomR = rate / 100;
+    var ear = compKey === 'continuously' ? (Math.exp(nomR) - 1) : (Math.pow(1 + nomR / (compN || 12), compN || 12) - 1);
+    var rPerPay = Math.pow(1 + ear, 1 / pb.perYear) - 1;
+
+    var c = getResultContainer();
+    if (!c) return;
+
+    if (way === 'a') {
+      var pmt = getFloat('cpaybackwayamount', 200);
+      var minPmt = loan * rPerPay;
+      if (pmt <= minPmt) {
+        c.innerHTML = '<h2 class="h2result">Payment Too Small</h2><p>Each payment (' + fmtMoney(pmt) + ') must exceed the periodic interest (' + fmtMoney(minPmt + 0.01) + ') to pay off the balance.</p>';
+        return;
+      }
+      var n = rPerPay === 0 ? (loan / pmt) : (-Math.log(1 - (loan * rPerPay) / pmt) / Math.log(1 + rPerPay));
+      var yearsTotal = n / pb.perYear;
+      var yrs = Math.floor(yearsTotal);
+      var mos = Math.round((yearsTotal - yrs) * 12);
+      if (mos === 12) { yrs += 1; mos = 0; }
+      var totalPaid = pmt * n;
+      var totalInt = totalPaid - loan;
+      c.innerHTML = `
+        <h2 class="h2result">Payoff Time: ${yrs} yrs ${mos} mos</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Time to Pay Off</b></td><td align="right"><font size="+1"><b>${yrs} years, ${mos} months (${fmtNum(n, 1)} payments)</b></font></td></tr>
+          <tr><td>Payment Amount (${pb.label})</td><td align="right"><b>${fmtMoney(pmt)}</b></td></tr>
+          <tr><td>Total Interest</td><td align="right"><font color="green"><b>${fmtMoney(totalInt)}</b></font></td></tr>
+          <tr><td>Total of All Payments</td><td align="right"><b>${fmtMoney(totalPaid)}</b></td></tr>
+        </table>
+      `;
+    } else {
+      var years = getFloat('cyears', 5);
+      var months = getFloat('cmonths', 0);
+      var totalYears = Math.max(1 / 12, years + months / 12);
+      var nPay = Math.max(1, Math.round(totalYears * pb.perYear));
+      var payAmt = rPerPay === 0 ? (loan / nPay) : (loan * rPerPay) / (1 - Math.pow(1 + rPerPay, -nPay));
+      var totPaid = payAmt * nPay;
+      var totInt = totPaid - loan;
+      c.innerHTML = `
+        <h2 class="h2result">Payment (${pb.label}): ${fmtMoney(payAmt)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Payment ${pb.label}</b></td><td align="right"><font size="+1"><b>${fmtMoney(payAmt)}</b></font></td></tr>
+          <tr><td>Total of ${nPay} Payments</td><td align="right"><b>${fmtMoney(totPaid)}</b></td></tr>
+          <tr><td>Total Interest</td><td align="right"><font color="green"><b>${fmtMoney(totInt)}</b></font></td></tr>
+          <tr><td>Loan Balance</td><td align="right">${fmtMoney(loan)}</td></tr>
+        </table>
+      `;
+    }
   };
 
   // Credit Card Calculator & Credit Card Payoff Calculator
@@ -3798,18 +3889,178 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Matrix Calculator
+  // Matrix Calculator (full interactive grid + Transpose, Power, Determinant, Inverse, Scalar)
+  function getMatrixDims(id) {
+    var rEl = document.querySelector('[name="' + id + 'row"]');
+    var cEl = document.querySelector('[name="' + id + 'column"]');
+    var rows = Math.max(1, Math.min(8, parseInt(rEl ? rEl.value : '4', 10) || 3));
+    var cols = Math.max(1, Math.min(8, parseInt(cEl ? cEl.value : '4', 10) || 3));
+    if (rEl) rEl.value = rows;
+    if (cEl) cEl.value = cols;
+    return { rows: rows, cols: cols };
+  }
+  function readMatrix(id) {
+    var dims = getMatrixDims(id);
+    var m = [];
+    for (var i = 0; i < dims.rows; i++) {
+      var row = [];
+      for (var j = 0; j < dims.cols; j++) {
+        var el = document.querySelector('[name="' + id + '_' + i + '_' + j + '"]');
+        var v = el ? parseFloat(el.value) : (i === j ? 1 : 0);
+        row.push(isNaN(v) ? 0 : v);
+      }
+      m.push(row);
+    }
+    return m;
+  }
+  function renderMatrixTable(mat, label) {
+    var rowsHtml = mat.map(function (r) {
+      return '<tr>' + r.map(function (v) {
+        var clean = Math.abs(v) < 1e-10 ? 0 : Number(v.toFixed(6));
+        return '<td style="text-align:center;min-width:44px;font-family:monospace;">' + clean + '</td>';
+      }).join('') + '</tr>';
+    }).join('');
+    return '<h2 class="h2result">' + label + '</h2><div style="overflow-x:auto;"><table class="cinfoT" style="margin-top:10px;width:auto;min-width:220px;">' + rowsHtml + '</table></div>';
+  }
+  function matMul(A, B) {
+    var r = A.length, c = B[0].length, kLen = B.length;
+    var out = [];
+    for (var i = 0; i < r; i++) {
+      out[i] = [];
+      for (var j = 0; j < c; j++) {
+        var s = 0;
+        for (var k = 0; k < kLen; k++) s += A[i][k] * B[k][j];
+        out[i][j] = s;
+      }
+    }
+    return out;
+  }
+  function matDetAndInv(A) {
+    var n = A.length;
+    var aug = A.map(function (row, i) {
+      var idRow = [];
+      for (var j = 0; j < n; j++) idRow.push(i === j ? 1 : 0);
+      return row.slice().concat(idRow);
+    });
+    var det = 1;
+    for (var col = 0; col < n; col++) {
+      var pivot = col;
+      for (var r = col + 1; r < n; r++) {
+        if (Math.abs(aug[r][col]) > Math.abs(aug[pivot][col])) pivot = r;
+      }
+      if (Math.abs(aug[pivot][col]) < 1e-12) return { det: 0, inv: null };
+      if (pivot !== col) {
+        var tmp = aug[col]; aug[col] = aug[pivot]; aug[pivot] = tmp;
+        det = -det;
+      }
+      var pivVal = aug[col][col];
+      det *= pivVal;
+      for (var j = 0; j < 2 * n; j++) aug[col][j] /= pivVal;
+      for (var r2 = 0; r2 < n; r2++) {
+        if (r2 !== col && Math.abs(aug[r2][col]) > 1e-14) {
+          var factor = aug[r2][col];
+          for (var j2 = 0; j2 < 2 * n; j2++) aug[r2][j2] -= factor * aug[col][j2];
+        }
+      }
+    }
+    var inv = aug.map(function (row) { return row.slice(n); });
+    return { det: det, inv: inv };
+  }
+  if (typeof window !== 'undefined') {
+    window.updateInput = function (id) {
+      var target = document.getElementById('minput' + id);
+      if (!target) return;
+      var dims = getMatrixDims(id);
+      var oldVals = {};
+      target.querySelectorAll('input').forEach(function (inp) { oldVals[inp.name] = inp.value; });
+      var html = '<div style="overflow-x:auto;"><table align="center" style="margin:10px auto;border-collapse:separate;border-spacing:4px;">';
+      for (var i = 0; i < dims.rows; i++) {
+        html += '<tr>';
+        for (var j = 0; j < dims.cols; j++) {
+          var name = id + '_' + i + '_' + j;
+          var def = oldVals[name] !== undefined ? oldVals[name] : (i === j ? '1' : '0');
+          html += '<td><input type="number" step="any" class="in3char" name="' + name + '" value="' + def + '" style="text-align:center;min-width:54px;"/></td>';
+        }
+        html += '</tr>';
+      }
+      html += '</table></div>';
+      target.innerHTML = html;
+    };
+    window.addRemove = function (id, axis, dir) {
+      var el = document.querySelector('[name="' + id + axis + '"]');
+      if (!el) return;
+      var v = parseInt(el.value, 10) || 3;
+      el.value = Math.max(1, Math.min(8, v + (dir === 'add' ? 1 : -1)));
+      window.updateInput(id);
+    };
+    window.popValue = function (id, val) {
+      var target = document.getElementById('minput' + id);
+      if (!target) return false;
+      target.querySelectorAll('input').forEach(function (inp) {
+        inp.value = val === 'r' ? Math.floor(Math.random() * 19) - 9 : val;
+      });
+      return false;
+    };
+    window.cTranspose = function (id) {
+      var A = readMatrix(id);
+      var T = A[0].map(function (_, c) { return A.map(function (r) { return r[c]; }); });
+      var res = getResultContainer();
+      if (res) { res.innerHTML = renderMatrixTable(T, 'Transpose (' + id.toUpperCase() + 'ᵀ)'); postProcessResult('matrix-calculator'); }
+      return false;
+    };
+    window.cPower = function (id) {
+      var A = readMatrix(id);
+      var res = getResultContainer();
+      if (!res) return false;
+      if (A.length !== A[0].length) { res.innerHTML = '<h2 class="h2result">Error</h2><p>Matrix must be square for power operations.</p>'; return false; }
+      var pEl = document.querySelector('[name="p' + id + '"]');
+      var p = Math.max(0, Math.min(20, parseInt(pEl ? pEl.value : '2', 10) || 2));
+      var out = A.map(function (row, i) { return row.map(function (_, j) { return i === j ? 1 : 0; }); });
+      for (var k = 0; k < p; k++) out = matMul(out, A);
+      res.innerHTML = renderMatrixTable(out, id.toUpperCase() + '^' + p);
+      postProcessResult('matrix-calculator');
+      return false;
+    };
+    window.cDeterminant = function (id) {
+      var A = readMatrix(id);
+      var res = getResultContainer();
+      if (!res) return false;
+      if (A.length !== A[0].length) { res.innerHTML = '<h2 class="h2result">Error</h2><p>Matrix must be square to compute determinant.</p>'; return false; }
+      var out = matDetAndInv(A);
+      var trace = A.reduce(function (acc, row, i) { return acc + row[i]; }, 0);
+      var detVal = Math.abs(out.det) < 1e-10 ? 0 : Number(out.det.toFixed(6));
+      res.innerHTML = '<h2 class="h2result">Determinant det(' + id.toUpperCase() + ') = ' + detVal + '</h2>' +
+        '<table class="cinfoT" width="100%" style="margin-top:10px;">' +
+        '<tr style="background:#eaf2e8;"><td><b>Determinant det(' + id.toUpperCase() + ')</b></td><td align="right"><font size="+1"><b>' + detVal + '</b></font></td></tr>' +
+        '<tr><td>Trace tr(' + id.toUpperCase() + ')</td><td align="right"><b>' + Number(trace.toFixed(6)) + '</b></td></tr>' +
+        '<tr><td>Invertible?</td><td align="right"><b>' + (out.inv ? 'Yes (Non-singular)' : 'No (Singular)') + '</b></td></tr></table>';
+      postProcessResult('matrix-calculator');
+      return false;
+    };
+    window.cInverse = function (id) {
+      var A = readMatrix(id);
+      var res = getResultContainer();
+      if (!res) return false;
+      if (A.length !== A[0].length) { res.innerHTML = '<h2 class="h2result">Error</h2><p>Matrix must be square to invert.</p>'; return false; }
+      var out = matDetAndInv(A);
+      if (!out.inv) { res.innerHTML = '<h2 class="h2result">Singular Matrix</h2><p>Determinant is 0; this matrix has no inverse.</p>'; return false; }
+      res.innerHTML = renderMatrixTable(out.inv, 'Inverse (' + id.toUpperCase() + '⁻¹)');
+      postProcessResult('matrix-calculator');
+      return false;
+    };
+    window.cTimes = function (id) {
+      var A = readMatrix(id);
+      var tEl = document.querySelector('[name="t' + id + '"]');
+      var scalar = parseFloat(tEl ? tEl.value : '3');
+      if (isNaN(scalar)) scalar = 1;
+      var scaled = A.map(function (r) { return r.map(function (v) { return v * scalar; }); });
+      var res = getResultContainer();
+      if (res) { res.innerHTML = renderMatrixTable(scaled, scalar + ' × ' + id.toUpperCase()); postProcessResult('matrix-calculator'); }
+      return false;
+    };
+  }
   engines['matrix-calculator'] = function () {
-    var c = getResultContainer();
-    if (!c) return;
-    c.innerHTML = `
-      <h2 class="h2result">Matrix Determinant: 1.0</h2>
-      <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>Determinant det(A)</b></td><td align="right"><font size="+1"><b>1.0</b></font></td></tr>
-        <tr><td>Trace tr(A)</td><td align="right"><b>4.0</b></td></tr>
-        <tr><td>Rank</td><td align="right"><b>4 (Full Rank)</b></td></tr>
-      </table>
-    `;
+    return window.cDeterminant ? (window.cDeterminant('a'), true) : false;
   };
 
   // Scientific Notation & Rounding
@@ -4346,24 +4597,68 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Sleep Calculator
+  // Sleep Calculator (supports Wake Up At & Go To Bed At + Now/Later shortcuts)
+  if (typeof window !== 'undefined') {
+    window.shPopTime = function () {
+      runCalculator(true);
+    };
+    window.scPopNow = function (_id, offsetMins) {
+      var d = new Date(Date.now() + (offsetMins || 0) * 60000);
+      var hrs = d.getHours();
+      var mins = d.getMinutes();
+      var ap = hrs >= 12 ? 'pm' : 'am';
+      var h12 = hrs % 12 || 12;
+      var hEl = document.querySelector('[name="hour"]');
+      var mEl = document.querySelector('[name="min"]');
+      var apEl = document.querySelector('[name="ap"]');
+      if (hEl) hEl.value = h12;
+      if (mEl) mEl.value = mins < 10 ? '0' + mins : mins;
+      if (apEl) apEl.value = ap;
+      runCalculator(false);
+      return false;
+    };
+  }
   engines['sleep-calculator'] = function () {
-    var now = new Date();
-    function addMinutes(date, minutes) {
-      return new Date(date.getTime() + minutes * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    var mode = String(getIn('wto', 'u'));
+    var h = getInt('hour', 6);
+    var m = getInt('min', 0);
+    var ap = String(getIn('ap', 'am')).toLowerCase();
+    var cycleMins = Math.max(30, getInt('clength', 90));
+    var fallAsleep = Math.max(0, getInt('ttsleep', 15));
+
+    var h24 = (h % 12) + (ap === 'pm' ? 12 : 0);
+    var baseDate = new Date(2026, 0, 1, h24, m, 0);
+    function fmtTime(minsDelta) {
+      var t = new Date(baseDate.getTime() + minsDelta * 60000);
+      return t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
+
+    var isWakeMode = mode === 'u';
+    var cycles = [6, 5, 4, 3, 2, 1].map(function (cnt) {
+      var totalSleep = cnt * cycleMins;
+      var delta = isWakeMode ? -(totalSleep + fallAsleep) : (totalSleep + fallAsleep);
+      var hrsStr = fmtNum(totalSleep / 60, 1);
+      return { cnt: cnt, time: fmtTime(delta), hrsStr: hrsStr, rec: cnt === 5 || cnt === 6 };
+    });
+
+    var heading = isWakeMode
+      ? 'Recommended Bedtimes (to wake at ' + fmtTime(0) + ')'
+      : 'Optimal Wake Times (going to bed at ' + fmtTime(0) + ')';
+
+    var rowsHtml = cycles.map(function (cy) {
+      var badge = cy.cnt === 6 ? ' (Peak Sleep)' : (cy.cnt === 5 ? ' (Recommended)' : '');
+      var bg = cy.rec ? ' style="background:#eaf2e8;"' : '';
+      return '<tr' + bg + '><td><b>' + cy.cnt + ' Cycles (' + cy.hrsStr + ' hrs)' + badge + '</b></td><td align="right"><font size="+1"><b>' + cy.time + '</b></font></td></tr>';
+    }).join('');
 
     var c = getResultContainer();
     if (!c) return;
-    c.innerHTML = `
-      <h2 class="h2result">Optimal Wake Times (90-min cycles)</h2>
-      <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>6 Cycles (9.0 Hours - Peak Sleep)</b></td><td align="right"><font size="+1" color="green"><b>${addMinutes(now, 555)}</b></font></td></tr>
-        <tr style="background:#eaf2e8;"><td><b>5 Cycles (7.5 Hours - Recommended)</b></td><td align="right"><font size="+1"><b>${addMinutes(now, 465)}</b></font></td></tr>
-        <tr><td>4 Cycles (6.0 Hours)</td><td align="right">${addMinutes(now, 375)}</td></tr>
-        <tr><td>Average time to fall asleep</td><td align="right">15 minutes included</td></tr>
-      </table>
-    `;
+    c.innerHTML =
+      '<h2 class="h2result">' + heading + '</h2>' +
+      '<table class="cinfoT" width="100%" style="margin-top:10px;">' +
+      rowsHtml +
+      '<tr><td>Sleep cycle / fall asleep time</td><td align="right">' + cycleMins + ' min cycle + ' + fallAsleep + ' min to fall asleep</td></tr>' +
+      '</table>';
   };
 
   // Conversion Calculator & Shoe Size & Tire Size & Bra Size & Height & Bandwidth
@@ -4486,6 +4781,100 @@ if (typeof document !== 'undefined') {
         runCalculator();
       }
     }
+
+    // Conversion Calculator data & handlers (scoped cleanly so BMI/Calorie popMenu isn't clobbered)
+    function bindConversionHandlers() {
+      var lA = [['Length', 'lA'], ['Meter', 'iv', 'iv'], ['Kilometer', 'iv*1000', 'iv/1000'], ['Centimeter', 'iv*0.01', 'iv/0.01'], ['Millimeter', 'iv*0.001', 'iv/0.001'], ['Micrometer', 'iv*0.000001', 'iv/0.000001'], ['Nanometer', 'iv*0.000000001', 'iv/0.000000001'], ['Mile', 'iv*1609.344', 'iv/1609.344'], ['Yard', 'iv*0.9144', 'iv/0.9144'], ['Foot', 'iv*0.3048', 'iv/0.3048'], ['Inch', 'iv*0.0254', 'iv/0.0254'], ['Light Year', 'iv*9.46066e+15', 'iv/9.46066e+15']];
+      var tA = [['Temperature', 'tA'], ['Celsius', 'iv', 'iv'], ['Kelvin', 'iv - 273.15', 'iv + 273.15'], ['Fahrenheit', '5/9*(iv-32)', '9/5*iv + 32']];
+      var aA = [['Area', 'aA'], ['Square Meter', 'iv', 'iv'], ['Square Kilometer', 'iv*1000000', 'iv/1000000'], ['Square Centimeter', 'iv*0.0001', 'iv/0.0001'], ['Square Millimeter', 'iv*0.000001', 'iv/0.000001'], ['Hectare', 'iv*10000', 'iv/10000'], ['Square Mile', 'iv*2589990', 'iv/2589990'], ['Square Yard', 'iv*0.83612736', 'iv/0.83612736'], ['Square Foot', 'iv*0.09290304', 'iv/0.09290304'], ['Square Inch', 'iv*0.000645160', 'iv/0.000645160'], ['Acre', 'iv*4046.8564224', 'iv/4046.8564224']];
+      var vA = [['Volume', 'vA'], ['Cubic Meter', 'iv', 'iv'], ['Cubic Kilometer', 'iv*1000000000', 'iv/1000000000'], ['Cubic Centimeter', 'iv*0.000001', 'iv/0.000001'], ['Liter', 'iv*0.001', 'iv/0.001'], ['Milliliter', 'iv*0.000001', 'iv/0.000001'], ['US Gallon', 'iv*0.00378541', 'iv/0.00378541'], ['US Quart', 'iv*0.0009463525', 'iv/0.0009463525'], ['US Pint', 'iv*0.00047317625', 'iv/0.00047317625'], ['US Cup', 'iv*0.000236588125', 'iv/0.000236588125'], ['US Fluid Ounce', 'iv*0.000029573515625', 'iv/0.000029573515625'], ['Cubic Foot', 'iv*0.028316846592', 'iv/0.028316846592'], ['Cubic Inch', 'iv*0.000016387064', 'iv/0.000016387064']];
+      var wA = [['Weight', 'wA'], ['Kilogram', 'iv', 'iv'], ['Gram', 'iv*0.001', 'iv/0.001'], ['Milligram', 'iv*0.000001', 'iv/0.000001'], ['Metric Ton', 'iv*1000', 'iv/1000'], ['Pound', 'iv*0.453592', 'iv/0.453592'], ['Ounce', 'iv*0.0283495', 'iv/0.0283495'], ['Carat', 'iv*0.0002', 'iv/0.0002']];
+      var mA = [['Time', 'mA'], ['Second', 'iv', 'iv'], ['Millisecond', 'iv*0.001', 'iv/0.001'], ['Minute', 'iv*60', 'iv/60'], ['Hour', 'iv*3600', 'iv/3600'], ['Day', 'iv*86400', 'iv/86400'], ['Week', 'iv*604800', 'iv/604800'], ['Month', 'iv*2629800', 'iv/2629800'], ['Year', 'iv*31557600', 'iv/31557600']];
+      var allA = [lA, tA, aA, vA, wA, mA];
+      window.lA = lA; window.tA = tA; window.aA = aA; window.vA = vA; window.wA = wA; window.mA = mA; window.allA = allA;
+      window.currentAName = lA;
+
+      function convEval(formula, iv) {
+        return Function('iv', '"use strict"; return (' + formula + ');')(iv);
+      }
+      window.showSel = function (aName) {
+        if (!document.calForm || !document.calForm.calFrom || !document.calForm.calTo) return;
+        window.currentAName = aName;
+        var fSel = document.calForm.calFrom;
+        var tSel = document.calForm.calTo;
+        fSel.length = 0;
+        tSel.length = 0;
+        for (var i = 1; i < aName.length; i++) {
+          fSel.options[i - 1] = new Option(aName[i][0], i);
+          tSel.options[i - 1] = new Option(aName[i][0], i);
+        }
+        fSel.options[0].selected = true;
+        if (tSel.options.length > 1) tSel.options[1].selected = true;
+        document.calForm.toVal.value = '';
+        window.calcul();
+      };
+      window.calcul = function () {
+        if (!document.calForm || !document.calForm.calFrom) return;
+        var cur = window.currentAName || lA;
+        var fSel = document.calForm.calFrom;
+        var tSel = document.calForm.calTo;
+        var raw = String(document.calForm.fromVal.value || '').replace(/[\s,]/g, '');
+        var fId = parseInt(fSel.value || '1', 10);
+        var tId = parseInt(tSel.value || '2', 10);
+        var fName = cur[fId] ? cur[fId][0] : '';
+        var num = parseFloat(raw);
+        var valid = raw.length > 0 && !isNaN(num) && fId > 0 && cur[fId];
+        var stdVal = valid ? convEval(cur[fId][1], num) : 0;
+        tSel.length = 0;
+        for (var i = 1; i < cur.length; i++) {
+          if (valid) {
+            var resVal = Number(convEval(cur[i][2], stdVal).toPrecision(10));
+            tSel.options[i - 1] = new Option(cur[i][0] + ' (' + resVal + ')', i);
+            if (i === tId) {
+              tSel.options[i - 1].selected = true;
+              document.calForm.toVal.value = resVal;
+              var fc = document.getElementById('fcresult');
+              if (fc) fc.innerHTML = "<font color='red'><b>Result:</b></font> " + raw + ' ' + fName + ' = ' + resVal + ' ' + cur[i][0];
+            }
+          } else {
+            tSel.options[i - 1] = new Option(cur[i][0], i);
+            if (i === tId) {
+              tSel.options[i - 1].selected = true;
+              document.calForm.toVal.value = '';
+              var fc2 = document.getElementById('fcresult');
+              if (fc2) fc2.innerHTML = raw.length > 0 ? "<font color='red'>Please provide a valid number!</font>" : '';
+            }
+          }
+        }
+      };
+      window.popMenu = function (inval) {
+        var menuEl = document.getElementById('topmenu');
+        if (!menuEl) return;
+        var htmlVal = '';
+        for (var i = 0; i < allA.length; i++) {
+          var isOn = inval === allA[i][0][0];
+          htmlVal += '<li' + (isOn ? " id='menuon'" : '') + "><a href='#' onclick=\"popMenu('" + allA[i][0][0] + "');showSel(" + allA[i][0][1] + ');return false;">' + allA[i][0][0] + '</a></li> ';
+        }
+        menuEl.innerHTML = '<ul>' + htmlVal + '</ul>';
+      };
+    }
+
+    window.prepareCalculatorMount = function (slug) {
+      if (slug === 'conversion-calculator' || document.getElementById('calFrom')) {
+        bindConversionHandlers();
+      }
+      if (slug === 'matrix-calculator' || document.getElementById('minputa')) {
+        if (typeof window.updateInput === 'function') window.updateInput('a');
+      }
+    };
+
+    window.onCalculatorMount = function (slug) {
+      if (slug === 'repayment-calculator' && typeof window.switchPaybackWay === 'function') {
+        var checkedWay = document.querySelector('[name="cpaybackway"]:checked');
+        window.switchPaybackWay(checkedWay ? checkedWay.value : 't');
+      }
+      populateFromUrlAndRun();
+    };
 
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       setTimeout(populateFromUrlAndRun, 50);

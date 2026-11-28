@@ -107,30 +107,38 @@ export default function Sidebar({
       <div
         className="sidebar-card"
         style={{
-          background: "#ffffff",
-          border: "1px solid #e2e8f0",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-subtle)",
           borderRadius: "14px",
           padding: "20px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+          boxShadow: "var(--shadow-sm)",
         }}
       >
         <div
           style={{
             fontSize: "15px",
             fontWeight: 700,
-            color: "#0f172a",
+            color: "var(--text-primary)",
             paddingBottom: "10px",
             marginBottom: "12px",
-            borderBottom: "1px solid #f1f5f9",
+            borderBottom: "1px solid var(--border-subtle)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
           }}
         >
-          <Link href={getCatUrl()} style={{ color: "#0f172a", textDecoration: "none" }}>
+          <Link href={getCatUrl()} style={{ color: "var(--text-primary)", textDecoration: "none" }}>
             {categoryTitle}
           </Link>
-          <span style={{ fontSize: "11px", color: "#64748b", background: "#f1f5f9", padding: "2px 8px", borderRadius: "10px" }}>
+          <span
+            style={{
+              fontSize: "11px",
+              color: "var(--text-muted)",
+              background: "var(--bg-card-subtle)",
+              padding: "2px 8px",
+              borderRadius: "10px",
+            }}
+          >
             Explore
           </span>
         </div>
@@ -140,20 +148,20 @@ export default function Sidebar({
           style={{
             marginTop: "18px",
             paddingTop: "14px",
-            borderTop: "1px solid #f1f5f9",
+            borderTop: "1px solid var(--border-subtle)",
             display: "flex",
             flexWrap: "wrap",
             gap: "8px",
             fontSize: "12px",
           }}
         >
-          <Link href="/financial-calculator" style={{ color: "#64748b", textDecoration: "none" }}>Financial</Link>
-          <span style={{ color: "#cbd5e1" }}>&bull;</span>
-          <Link href="/fitness-and-health-calculator" style={{ color: "#64748b", textDecoration: "none" }}>Fitness &amp; Health</Link>
-          <span style={{ color: "#cbd5e1" }}>&bull;</span>
-          <Link href="/math-calculator" style={{ color: "#64748b", textDecoration: "none" }}>Math</Link>
-          <span style={{ color: "#cbd5e1" }}>&bull;</span>
-          <Link href="/other-calculator" style={{ color: "#64748b", textDecoration: "none" }}>Other</Link>
+          <Link href="/financial-calculator" style={{ color: "var(--text-muted)", textDecoration: "none" }}>Financial</Link>
+          <span style={{ color: "var(--border-subtle)" }}>&bull;</span>
+          <Link href="/fitness-and-health-calculator" style={{ color: "var(--text-muted)", textDecoration: "none" }}>Fitness &amp; Health</Link>
+          <span style={{ color: "var(--border-subtle)" }}>&bull;</span>
+          <Link href="/math-calculator" style={{ color: "var(--text-muted)", textDecoration: "none" }}>Math</Link>
+          <span style={{ color: "var(--border-subtle)" }}>&bull;</span>
+          <Link href="/other-calculator" style={{ color: "var(--text-muted)", textDecoration: "none" }}>Other</Link>
         </div>
       </div>
     </div>

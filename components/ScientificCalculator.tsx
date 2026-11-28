@@ -15,7 +15,7 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
   const [history, setHistory] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<"standard" | "scientific">(defaultMode);
 
-  // Evaluate mathematical expression safely and accurately
+  // Evaluate mathematical expression safely and accurately (supports nested parens)
   const calcEval = useCallback(
     (mathExpr: string): number => {
       try {
@@ -28,52 +28,52 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
           .replace(/\be\b/g, "Math.E")
           .replace(/\^/g, "**");
 
-        // Trigonometric functions
-        clean = clean.replace(/sin\(([^)]+)\)/g, (_, val) =>
-          angleMode === "deg"
-            ? `Math.sin((${val}) * Math.PI / 180)`
-            : `Math.sin(${val})`
-        );
-        clean = clean.replace(/cos\(([^)]+)\)/g, (_, val) =>
-          angleMode === "deg"
-            ? `Math.cos((${val}) * Math.PI / 180)`
-            : `Math.cos(${val})`
-        );
-        clean = clean.replace(/tan\(([^)]+)\)/g, (_, val) =>
-          angleMode === "deg"
-            ? `Math.tan((${val}) * Math.PI / 180)`
-            : `Math.tan(${val})`
-        );
-        clean = clean.replace(/asin\(([^)]+)\)/g, (_, val) =>
-          angleMode === "deg"
-            ? `(Math.asin(${val}) * 180 / Math.PI)`
-            : `Math.asin(${val})`
-        );
-        clean = clean.replace(/acos\(([^)]+)\)/g, (_, val) =>
-          angleMode === "deg"
-            ? `(Math.acos(${val}) * 180 / Math.PI)`
-            : `Math.acos(${val})`
-        );
-        clean = clean.replace(/atan\(([^)]+)\)/g, (_, val) =>
-          angleMode === "deg"
-            ? `(Math.atan(${val}) * 180 / Math.PI)`
-            : `Math.atan(${val})`
-        );
-        clean = clean.replace(/log\(([^)]+)\)/g, "Math.log10($1)");
-        clean = clean.replace(/ln\(([^)]+)\)/g, "Math.log($1)");
-        clean = clean.replace(/sqrt\(([^)]+)\)/g, "Math.sqrt($1)");
-        clean = clean.replace(/cbrt\(([^)]+)\)/g, "Math.cbrt($1)");
+        // Implicit multiplication: 2(3), )(, 2Math.PI, )Math.PI, Math.PI(2)
+        clean = clean
+          .replace(/(\d)(?=\()/g, "$1*")
+          .replace(/\)(?=\()/g, ")*")
+          .replace(/\)(?=\d)/g, ")*")
+          .replace(/(\d)(?=Math\.|[a-z]+\()/gi, "$1*")
+          .replace(/\)(?=Math\.|[a-z]+\()/gi, ")*");
 
-        // Factorial
-        clean = clean.replace(/(\d+)!/g, (_, n) => {
-          const num = Math.min(parseInt(n, 10), 100);
+        // Map functions to scoped helpers so nested parens (e.g. sin(sqrt(90))) work
+        clean = clean
+          .replace(/\basin\(/g, "_asin(")
+          .replace(/\bacos\(/g, "_acos(")
+          .replace(/\batan\(/g, "_atan(")
+          .replace(/\bsin\(/g, "_sin(")
+          .replace(/\bcos\(/g, "_cos(")
+          .replace(/\btan\(/g, "_tan(")
+          .replace(/\blog\(/g, "Math.log10(")
+          .replace(/\bln\(/g, "Math.log(")
+          .replace(/\bsqrt\(/g, "Math.sqrt(")
+          .replace(/\bcbrt\(/g, "Math.cbrt(");
+
+        // Factorial: handle N! and (... )! iteratively
+        while (/(\([^()]+\)|\d+)!/.test(clean)) {
+          clean = clean.replace(/(\([^()]+\)|\d+)!/g, "_fact($1)");
+        }
+
+        const toRad = angleMode === "deg" ? Math.PI / 180 : 1;
+        const fromRad = angleMode === "deg" ? 180 / Math.PI : 1;
+        const _sin = (x: number) => Math.sin(x * toRad);
+        const _cos = (x: number) => Math.cos(x * toRad);
+        const _tan = (x: number) => Math.tan(x * toRad);
+        const _asin = (x: number) => Math.asin(x) * fromRad;
+        const _acos = (x: number) => Math.acos(x) * fromRad;
+        const _atan = (x: number) => Math.atan(x) * fromRad;
+        const _fact = (n: number) => {
+          if (n < 0 || !Number.isInteger(n) || n > 170) return NaN;
           let f = 1;
-          for (let i = 2; i <= num; i++) f *= i;
-          return String(f);
-        });
+          for (let i = 2; i <= n; i++) f *= i;
+          return f;
+        };
 
-        // Safe Function evaluation
-        const res = Function(`"use strict"; return (${clean})`)();
+        const fn = Function(
+          "_sin", "_cos", "_tan", "_asin", "_acos", "_atan", "_fact",
+          `"use strict"; return (${clean})`
+        );
+        const res = fn(_sin, _cos, _tan, _asin, _acos, _atan, _fact);
         if (typeof res === "number" && !isNaN(res) && isFinite(res)) {
           return res;
         }
@@ -208,9 +208,14 @@ export default function ScientificCalculator({ defaultMode = "scientific" }: Sci
         setExpr((prev) => prev + "*10^");
         setDisplay((prev) => prev + "E");
       } else {
-        // Digits & Operators
-        setExpr((prev) => prev + c);
-        setDisplay((prev) => (prev === "0" && !["+", "–", "×", "÷", "."].includes(c) ? c : prev + c));
+        // Digits & Operators — clear prior "Error" state cleanly
+        const wasError = display === "Error";
+        const isOp = ["+", "–", "×", "÷"].includes(c);
+        setExpr((prev) => (wasError ? (isOp ? "0" + c : c) : prev + c));
+        setDisplay((prev) => {
+          if (wasError) return isOp ? "0" + c : c;
+          return prev === "0" && !["+", "–", "×", "÷", "."].includes(c) ? c : prev + c;
+        });
       }
     },
     [expr, display, ans, memory, calcEval]

@@ -165,6 +165,7 @@ export default function RootLayout({
         </footer>
 
         <Script src="/js/common.js" strategy="afterInteractive" />
+        <Script src="/js/loannew.js" strategy="afterInteractive" />
         <Script src="/js/calc-engines.js" strategy="afterInteractive" />
         <Script
           id="pwa-sw-register"
