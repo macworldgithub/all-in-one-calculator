@@ -19,7 +19,6 @@ A fast, privacy-first web suite of **215+ free online calculators** across Finan
 ### Setup
 
 ```bash
-cd calculator-updated
 npm ci
 cp .env.example .env.local
 npm run dev
@@ -46,7 +45,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Deployment (Vercel)
 
-1. Set **Root Directory** to `calculator-updated`.
+1. Import the `all-in-one-calculator` repository with default Root Directory (`.`).
 2. Framework preset: **Next.js**.
 3. Optional environment variable: `NEXT_PUBLIC_SITE_URL=https://all-in-one-calculator.vercel.app`.
 4. Health check endpoint: `GET /api/health` returns `{ status: "ok", calculatorCount: 215, ... }`.
