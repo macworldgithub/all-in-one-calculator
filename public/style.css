@@ -1007,7 +1007,7 @@ p {
 }
 
 /* Calculator Panel Cards */
-.panel, #content .panel, .cpanel {
+.panel, #content .panel, .panel2, #content .panel2, .cpanel {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
@@ -1015,15 +1015,150 @@ p {
   box-shadow: var(--shadow-sm);
   margin-bottom: 24px;
   box-sizing: border-box;
+  max-width: 100%;
+}
+
+/* Tabbed Unit / Mode Navigation (#topmenu) */
+#topmenuout,
+.topmenucenter {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#topmenu {
+  margin: 0 0 12px 0;
+  padding: 0;
+}
+#topmenu ul {
+  list-style: none !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px !important;
+  margin: 0 !important;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+#topmenu li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 1 1 auto;
+}
+#topmenu li a {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 14px !important;
+  min-height: 36px;
+  border-radius: calc(var(--radius-md) - 3px);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary) !important;
+  text-decoration: none !important;
+  text-transform: capitalize;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+#topmenu li a:hover {
+  color: var(--color-primary) !important;
+  background: var(--bg-card);
+}
+#topmenu li#menuon a {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+/* Inline Other Units Quick Converter Panel (#ucframe / #ucvtwraper) */
+#ucframe:empty,
+#ucvtwraper:empty {
+  display: none;
+}
+#ucframe,
+#ucvtwraper {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 16px 0;
+  box-sizing: border-box;
+}
+.ucvt-card {
+  background: var(--bg-card);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.ucvt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ucvt-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.ucvt-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-card-subtle);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ucvt-close:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+}
+.ucvt-row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.ucvt-group {
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+.ucvt-group:first-of-type {
+  border-top: none;
+  padding-top: 2px;
+}
+.ucvt-out {
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: var(--text-primary);
+  min-height: 20px;
 }
 
 /* Form Tables */
-.panel table {
+.panel table,
+.panel2 table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 8px;
 }
-.panel td {
+.panel td,
+.panel2 td {
   padding: 3px 6px;
   font-size: 14px;
   color: var(--text-secondary);
@@ -1098,11 +1233,22 @@ input.inui1c:not(.inlonger):not(.inlongest):not(.indollar),
 #content td:has(.inuifootspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
 #content td:has(.inuiinchspan) input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest),
 #content td[nowrap] input:not(.indollar):not(.inpct):not(.inlonger):not(.inlongest) {
-  width: 86px !important;
-  max-width: 86px !important;
-  min-width: 76px !important;
+  width: 108px !important;
+  max-width: 124px !important;
+  min-width: 96px !important;
   display: inline-block !important;
   vertical-align: middle !important;
+}
+#content input.inuifoot:not(.inlonger):not(.inlongest),
+#content input.inuick:not(.inlonger):not(.inlongest) {
+  width: 98px !important;
+  min-width: 90px !important;
+}
+#content input.inuiinch:not(.inlonger):not(.inlongest),
+#content input.inuipound:not(.inlonger):not(.inlongest),
+#content input.inuiyear:not(.inlonger):not(.inlongest) {
+  width: 114px !important;
+  min-width: 104px !important;
 }
 
 /* Single wide inputs carrying both $ and unit suffix (e.g. student-loan cmonthlypay) */
@@ -4523,10 +4669,10 @@ html.light input.inpct,
   .panel td:has(.inuipoundspan) input:not(.inlonger):not(.inlongest):not(.indollar),
   .panel td:has(.inuifootspan) input:not(.inlonger):not(.inlongest):not(.indollar),
   .panel td:has(.inuiinchspan) input:not(.inlonger):not(.inlongest):not(.indollar) {
-    width: 86px !important;
-    max-width: 95px !important;
-    min-width: 78px !important;
-    flex: 0 1 auto !important;
+    width: 112px !important;
+    max-width: 132px !important;
+    min-width: 96px !important;
+    flex: 0 1 112px !important;
   }
 }
 
@@ -4753,7 +4899,7 @@ html.dark #content svg .mcpline,
   }
 
   /* Tables in #content cannot exceed viewport width; wide multi-col tables scroll cleanly inside container */
-  #content table:not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(#cmoreoptioninputs):not(#ctaxcost):not(#cadditionalonetimediv table) {
+  #content table:not([style*="display: none"]):not([style*="display:none"]):not(form[name="gradeform"] table):not(form[name="gpaform"] table):not(#cmoreoptioninputs):not(#ctaxcost):not(#cadditionalonetimediv table) {
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -4996,4 +5142,43 @@ html.dark #content svg .mcpline,
     width: 100% !important;
     text-align: center !important;
   }
+
+  /* Ensure unit/compound inputs keep generous width on compact screens */
+  #content input.inlongest.inuipound,
+  #content input.inlongest.inuick {
+    width: 100% !important;
+    max-width: 240px !important;
+    min-width: 130px !important;
+  }
+
+  /* Pace Calculator rows stack cleanly so #cdistance isn't compressed by 2 wide selects */
+  #content #calinputtime tr,
+  #content #calinputdistance tr,
+  #content #calinputpace tr {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  #content #calinputtime td,
+  #content #calinputdistance td,
+  #content #calinputpace td {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #content #calinputdistance input.inlong,
+  #content #calinputtime input.inlong,
+  #content #calinputpace input.inlong {
+    min-width: 130px !important;
+    width: 100% !important;
+  }
+}
+
+/* CRITICAL: Never let mobile table/flex overrides unhide JS-toggled or inline display:none elements */
+html #content [style*="display: none"],
+html #content [style*="display:none"],
+html #content table[style*="display: none"],
+html #content table[style*="display:none"] {
+  display: none !important;
 }

@@ -784,32 +784,87 @@ engines['inflation-calculator'] = function () {
   return true;
 };
 
-// 8. Body Fat Calculator (US Navy Formula)
-engines['body-fat-calculator'] = function () {
-  var gender = (getIn('cgender', 'm') || 'm').toLowerCase().charAt(0);
-  var age = getInt('cage', 25);
-  var weight = getFloat('cweight', 160);
-  var feet = getFloat('cheightfeet', 5);
-  var inch = getFloat('cheightinch', 10);
-  var waist = getFloat('cwaist', 32);
-  var neck = getFloat('cneck', 15);
-  var hip = getFloat('chip', 36);
-
-  var hInches = feet * 12 + inch;
-  var bf = 15;
-
-  if (gender === 'f') {
-    bf = 163.205 * Math.log10(waist + hip - neck) - 97.684 * Math.log10(hInches) - 78.387;
-  } else {
-    bf = 86.010 * Math.log10(waist - neck) - 70.041 * Math.log10(hInches) + 36.76;
+  function getBodyMetrics(defaults) {
+    defaults = defaults || {};
+    var ctype = (getIn('ctype', 'standard') || 'standard').toLowerCase();
+    var isMetric = (ctype === 'metric');
+    var sexRaw = getIn('csex', '') || getIn('cgender', 'm');
+    var sex = (sexRaw || 'm').toLowerCase().charAt(0) === 'f' ? 'f' : 'm';
+    var age = getFloat('cage', defaults.age || 25);
+    var cm = getFloat('cheightmeter', defaults.cm || 178);
+    var kg = getFloat('ckg', defaults.kg || getFloat('cweightkgs', 70));
+    var feet = getFloat('cheightfeet', defaults.feet || 5);
+    var inch = getFloat('cheightinch', defaults.inch || 10);
+    var lbs = getFloat('cpound', getFloat('cweightlbs', getFloat('bodyweight', getFloat('cweight', defaults.lbs || 160))));
+    var h_cm = isMetric ? cm : (feet * 12 + inch) * 2.54;
+    var w_kg = isMetric ? kg : lbs * 0.45359237;
+    if (!(h_cm > 0)) h_cm = 175;
+    if (!(w_kg > 0)) w_kg = 70;
+    return {
+      isMetric: isMetric,
+      sex: sex,
+      age: age,
+      h_cm: h_cm,
+      h_m: h_cm / 100,
+      h_in: h_cm / 2.54,
+      w_kg: w_kg,
+      w_lbs: w_kg * 2.20462262
+    };
   }
-  if (isNaN(bf) || bf < 3) bf = 12.0;
 
-  var fatMass = weight * (bf / 100);
-  var leanMass = weight - fatMass;
+// 8. Body Fat Calculator (US Navy & BMI Method, US + Metric Units)
+engines['body-fat-calculator'] = function () {
+  var m = getBodyMetrics({ feet: 5, inch: 10.5, lbs: 152, cm: 178, kg: 70 });
+  var isMetric = m.isMetric;
+  var sex = m.sex;
+  var age = m.age;
+  var hInches = m.h_in;
+  var hCm = m.h_cm;
+
+  var waistIn, neckIn, hipIn, waistCm, neckCm, hipCm;
+  if (isMetric) {
+    waistCm = getFloat('cwaistmeter', 96);
+    neckCm = getFloat('cneckmeter', 50);
+    hipCm = getFloat('chipmeter', 92);
+    waistIn = waistCm / 2.54;
+    neckIn = neckCm / 2.54;
+    hipIn = hipCm / 2.54;
+  } else {
+    waistIn = getFloat('cwaistfeet', 3) * 12 + getFloat('cwaistinch', 1.5);
+    neckIn = getFloat('cneckfeet', 1) * 12 + getFloat('cneckinch', 7.5);
+    hipIn = getFloat('chipfeet', 2) * 12 + getFloat('chipinch', 10.5);
+    waistCm = waistIn * 2.54;
+    neckCm = neckIn * 2.54;
+    hipCm = hipIn * 2.54;
+  }
+
+  var bf = 15;
+  if (sex === 'f') {
+    var diffF = waistIn + hipIn - neckIn;
+    bf = diffF > 1 ? (163.205 * Math.log10(diffF) - 97.684 * Math.log10(hInches) - 78.387) : 20;
+  } else {
+    var diffM = waistIn - neckIn;
+    bf = diffM > 1 ? (86.010 * Math.log10(diffM) - 70.041 * Math.log10(hInches) + 36.76) : 15;
+  }
+  if (isNaN(bf) || bf < 2) bf = 12.0;
+
+  var bmi = m.w_kg / (m.h_m * m.h_m);
+  var bfBmi = age >= 18
+    ? (1.20 * bmi + 0.23 * age - (sex === 'm' ? 16.2 : 5.4))
+    : (1.51 * bmi - 0.70 * age - (sex === 'm' ? 2.2 : -1.4));
+
+  var idealPct = sex === 'm'
+    ? Math.max(8.5, Math.min(24, 8.5 + Math.max(0, age - 20) * 0.35))
+    : Math.max(17.7, Math.min(28, 17.7 + Math.max(0, age - 20) * 0.25));
+
+  var weightUnit = isMetric ? 'kg' : 'lbs';
+  var displayW = isMetric ? m.w_kg : m.w_lbs;
+  var fatMass = displayW * (bf / 100);
+  var leanMass = displayW - fatMass;
+  var lossToIdeal = Math.max(0, displayW * ((bf - idealPct) / 100));
 
   var category = 'Fitness';
-  if (gender === 'm') {
+  if (sex === 'm') {
     if (bf < 6) category = 'Essential fat';
     else if (bf <= 13) category = 'Athletes';
     else if (bf <= 17) category = 'Fitness';
@@ -828,44 +883,48 @@ engines['body-fat-calculator'] = function () {
     <h2 class="h2result">Body Fat Result</h2>
     <p class="verybigtext">Body Fat: <font color="green"><b>${bf.toFixed(1)}%</b></font> (${category})</p>
     <table class="cinfoT" width="100%">
-      <tr><td>Body Fat Category:</td><td align="right"><b>${category}</b></td></tr>
-      <tr><td>Body Fat Mass:</td><td align="right">${fatMass.toFixed(1)} lbs</td></tr>
-      <tr><td>Lean Body Mass:</td><td align="right">${leanMass.toFixed(1)} lbs</td></tr>
-      <tr style="background:#eaf2e8;"><td><b>Healthy Body Fat Range:</b></td><td align="right">${gender === 'm' ? '10 - 20%' : '18 - 28%'}</td></tr>
+      <tr><td>Body Fat (U.S. Navy Method)</td><td align="right"><b>${bf.toFixed(1)}%</b></td></tr>
+      <tr><td>Body Fat Category</td><td align="right"><b>${category}</b></td></tr>
+      <tr><td>Body Fat Mass</td><td align="right">${fatMass.toFixed(1)} ${weightUnit}</td></tr>
+      <tr><td>Lean Body Mass</td><td align="right">${leanMass.toFixed(1)} ${weightUnit}</td></tr>
+      <tr><td>Ideal Body Fat for Given Age</td><td align="right">${idealPct.toFixed(1)}%</td></tr>
+      <tr><td>Body Fat to Lose to Reach Ideal</td><td align="right">${lossToIdeal.toFixed(1)} ${weightUnit}</td></tr>
+      <tr style="background:#eaf2e8;"><td><b>Body Fat (BMI method)</b></td><td align="right"><b>${bfBmi.toFixed(1)}%</b></td></tr>
     </table>
   `;
   return true;
 };
 
-// 9. BMR Calculator
+// 9. BMR Calculator (US + Metric + Formula & Unit Preferences)
 engines['bmr-calculator'] = function () {
-  var gender = (getIn('cgender', 'm') || 'm').toLowerCase().charAt(0);
-  var age = getInt('cage', 25);
-  var feet = getFloat('cheightfeet', 5);
-  var inch = getFloat('cheightinch', 10);
-  var weightLbs = getFloat('cweight', 160);
+  var m = getBodyMetrics({ feet: 5, inch: 10, lbs: 160, cm: 180, kg: 60 });
+  var coutunit = (getIn('coutunit', 'c') || 'c').toLowerCase();
+  var cformula = (getIn('cformula', 'm') || 'm').toLowerCase();
+  var fatPct = getFloat('cfatpct', 20);
 
-  var hCm = (feet * 12 + inch) * 2.54;
-  var wKg = weightLbs * 0.453592;
+  var bmrMifflin = 10 * m.w_kg + 6.25 * m.h_cm - 5 * m.age + (m.sex === 'm' ? 5 : -161);
+  var bmrHB = m.sex === 'm'
+    ? 13.397 * m.w_kg + 4.799 * m.h_cm - 5.677 * m.age + 88.362
+    : 9.247 * m.w_kg + 3.098 * m.h_cm - 4.330 * m.age + 447.593;
+  var bmrKatch = 370 + 21.6 * (1 - fatPct / 100) * m.w_kg;
 
-  // Mifflin - St Jeor
-  var bmrMifflin = 10 * wKg + 6.25 * hCm - 5 * age + (gender === 'm' ? 5 : -161);
-  // Harris - Benedict
-  var bmrHB = gender === 'm'
-    ? 13.397 * wKg + 4.799 * hCm - 5.677 * age + 88.362
-    : 9.247 * wKg + 3.098 * hCm - 4.330 * age + 447.593;
+  var baseCal = cformula === 'h' ? bmrHB : (cformula === 'k' ? bmrKatch : bmrMifflin);
+  var factor = coutunit === 'j' ? 4.184 : 1;
+  var unitLabel = coutunit === 'j' ? 'Kilojoules/day' : 'Calories/day';
+  var colLabel = coutunit === 'j' ? 'Kilojoule' : 'Calorie';
 
   var c = getResultContainer();
   c.innerHTML = `
     <h2 class="h2result">BMR Result</h2>
-    <p class="verybigtext">BMR = <font color="green"><b>${Math.round(bmrMifflin)}</b></font> Calories/day</p>
+    <p class="verybigtext">BMR = <font color="green"><b>${Math.round(baseCal * factor).toLocaleString()}</b></font> ${unitLabel}</p>
     <table class="cinfoT" width="100%">
-      <tr><td class="cinfoHd"><b>Activity Level</b></td><td class="cinfoHd" align="right"><b>Calorie Needs</b></td></tr>
-      <tr><td>Sedentary (little or no exercise):</td><td align="right"><b>${Math.round(bmrMifflin * 1.2)}</b></td></tr>
-      <tr><td>Lightly active (exercise 1-3 days/week):</td><td align="right"><b>${Math.round(bmrMifflin * 1.375)}</b></td></tr>
-      <tr><td>Moderately active (exercise 4-5 days/week):</td><td align="right"><b>${Math.round(bmrMifflin * 1.55)}</b></td></tr>
-      <tr><td>Very active (exercise 6-7 days/week):</td><td align="right"><b>${Math.round(bmrMifflin * 1.725)}</b></td></tr>
-      <tr style="background:#eaf2e8;"><td><b>Harris-Benedict Estimate:</b></td><td align="right"><b>${Math.round(bmrHB)} Cal</b></td></tr>
+      <tr><td class="cinfoHd"><b>Activity Level</b></td><td class="cinfoHd" align="right"><b>${colLabel}</b></td></tr>
+      <tr><td>Sedentary: little or no exercise</td><td align="right"><b>${Math.round(baseCal * 1.2 * factor).toLocaleString()}</b></td></tr>
+      <tr><td>Exercise 1-3 times/week</td><td align="right"><b>${Math.round(baseCal * 1.375 * factor).toLocaleString()}</b></td></tr>
+      <tr><td>Exercise 4-5 times/week</td><td align="right"><b>${Math.round(baseCal * 1.465 * factor).toLocaleString()}</b></td></tr>
+      <tr><td>Daily exercise or intense exercise 3-4 times/week</td><td align="right"><b>${Math.round(baseCal * 1.55 * factor).toLocaleString()}</b></td></tr>
+      <tr><td>Intense exercise 6-7 times/week</td><td align="right"><b>${Math.round(baseCal * 1.725 * factor).toLocaleString()}</b></td></tr>
+      <tr style="background:#eaf2e8;"><td><b>Very intense exercise daily, or physical job</b></td><td align="right"><b>${Math.round(baseCal * 1.9 * factor).toLocaleString()}</b></td></tr>
     </table>
   `;
   return true;
@@ -1869,17 +1928,8 @@ engines['grade-calculator'] = function () {
 
   // --- 2. HEALTH & FITNESS GROUP ---
   engines['bmi-calculator'] = function () {
-    var ctype = getIn('ctype', 'standard');
-    var feet = getFloat('cheightfeet', 5);
-    var inch = getFloat('cheightinch', 10);
-    var lbs = getFloat('cpound', 160);
-    var cm = getFloat('cheightmeter', 180);
-    var kg = getFloat('ckg', 65);
-
-    var h_m = (ctype === 'metric' || cm > 50) ? (cm / 100) : (feet * 12 + inch) * 0.0254;
-    var w_kg = (ctype === 'metric' || kg > 20) ? kg : lbs * 0.45359237;
-    if (h_m <= 0) h_m = 1.75;
-    var bmi = w_kg / (h_m * h_m);
+    var m = getBodyMetrics({ feet: 5, inch: 10, lbs: 160, cm: 180, kg: 65 });
+    var bmi = m.w_kg / (m.h_m * m.h_m);
 
     var cat = 'Normal', color = 'green';
     if (bmi < 18.5) { cat = 'Underweight'; color = '#e69900'; }
@@ -1888,8 +1938,9 @@ engines['grade-calculator'] = function () {
     else { cat = 'Obese'; color = '#bc2020'; }
 
     var deg = Math.max(0, Math.min(180, (bmi - 10) / (40 - 10) * 180));
-    var minHealthyLbs = (18.5 * h_m * h_m) * 2.20462;
-    var maxHealthyLbs = (25.0 * h_m * h_m) * 2.20462;
+    var minHealthy = m.isMetric ? (18.5 * m.h_m * m.h_m) : (18.5 * m.h_m * m.h_m * 2.20462);
+    var maxHealthy = m.isMetric ? (25.0 * m.h_m * m.h_m) : (25.0 * m.h_m * m.h_m * 2.20462);
+    var wUnit = m.isMetric ? 'kg' : 'lbs';
 
     var c = getResultContainer();
     if (!c) return;
@@ -1914,37 +1965,42 @@ engines['grade-calculator'] = function () {
       </div>
       <ul style="margin-left:8px;padding-left:8px;margin-top:8px;">
         <li>Healthy BMI range: <b>18.5 kg/m<sup>2</sup> - 25 kg/m<sup>2</sup></b></li>
-        <li>Healthy weight for the height: <b>${minHealthyLbs.toFixed(1)} lbs - ${maxHealthyLbs.toFixed(1)} lbs</b></li>
+        <li>Healthy weight for the height: <b>${minHealthy.toFixed(1)} ${wUnit} - ${maxHealthy.toFixed(1)} ${wUnit}</b></li>
+        <li>BMI Prime: <b>${(bmi / 25).toFixed(2)}</b></li>
+        <li>Ponderal Index: <b>${(m.w_kg / Math.pow(m.h_m, 3)).toFixed(1)} kg/m<sup>3</sup></b></li>
       </ul>
     `;
   };
 
   engines['calorie-calculator'] = engines['tdee-calculator'] = function () {
-    var age = getFloat('cage', 25);
-    var sex = getIn('csex', 'm');
-    var feet = getFloat('cheightfeet', 5);
-    var inch = getFloat('cheightinch', 10);
-    var lbs = getFloat('cpound', 165);
-    var cm = getFloat('cheightmeter', 180);
-    var kg = getFloat('ckg', 75);
-    var act = getFloat('cactivity', 1.375);
+    var m = getBodyMetrics({ feet: 5, inch: 10, lbs: 165, cm: 180, kg: 75 });
+    var act = getFloat('cactivity', 1.465);
+    var coutunit = (getIn('coutunit', 'c') || 'c').toLowerCase();
+    var cformula = (getIn('cformula', 'm') || 'm').toLowerCase();
+    var fatPct = getFloat('cfatpct', 20);
 
-    var h_cm = cm > 50 ? cm : (feet * 12 + inch) * 2.54;
-    var w_kg = kg > 20 ? kg : lbs * 0.45359237;
-    var bmr = 10 * w_kg + 6.25 * h_cm - 5 * age + (sex === 'm' ? 5 : -161);
+    var bmr = cformula === 'h'
+      ? (m.sex === 'm' ? 13.397 * m.w_kg + 4.799 * m.h_cm - 5.677 * m.age + 88.362 : 9.247 * m.w_kg + 3.098 * m.h_cm - 4.330 * m.age + 447.593)
+      : (cformula === 'k' ? (370 + 21.6 * (1 - fatPct / 100) * m.w_kg) : (10 * m.w_kg + 6.25 * m.h_cm - 5 * m.age + (m.sex === 'm' ? 5 : -161)));
     var tdee = Math.round(bmr * act);
+    var factor = coutunit === 'j' ? 4.184 : 1;
+    var u = coutunit === 'j' ? 'Kilojoules/day' : 'Calories/day';
+    var lossUnit = m.isMetric ? 'kg/week' : 'lb/week';
+    var stepSmall = m.isMetric ? '0.25' : '0.5';
+    var stepMed = m.isMetric ? '0.5' : '1.0';
+    var stepLarge = m.isMetric ? '1.0' : '2.0';
 
     var c = getResultContainer();
     if (!c) return;
     c.innerHTML = `
       <h2 class="h2result">Daily Calorie Needs</h2>
-      <div class="bigtext" style="margin: 8px 0;"><b>Maintain weight: <font color="green">${tdee.toLocaleString()} Calories/day</font></b></div>
+      <div class="bigtext" style="margin: 8px 0;"><b>Maintain weight: <font color="green">${Math.round(tdee * factor).toLocaleString()} ${u}</font></b></div>
       <table class="cinfoT" width="100%">
-        <tr><td class="cinfoHd">Goal</td><td class="cinfoHd" align="right">Calories / Day</td><td class="cinfoHd" align="right">Pace</td></tr>
-        <tr style="background:#f4fbf0;"><td><b>Maintain Weight</b></td><td align="right"><b>${tdee.toLocaleString()}</b></td><td align="right">0 lb/week</td></tr>
-        <tr><td>Mild Weight Loss</td><td align="right"><b>${Math.round(tdee - 250).toLocaleString()}</b></td><td align="right">-0.5 lb/week</td></tr>
-        <tr style="background:#fff7e6;"><td><b>Weight Loss</b></td><td align="right"><b><font color="#d97706">${Math.round(tdee - 500).toLocaleString()}</font></b></td><td align="right">-1.0 lb/week</td></tr>
-        <tr><td>Extreme Weight Loss</td><td align="right"><b>${Math.round(tdee - 1000).toLocaleString()}</b></td><td align="right">-2.0 lb/week</td></tr>
+        <tr><td class="cinfoHd">Goal</td><td class="cinfoHd" align="right">${coutunit === 'j' ? 'Kilojoules' : 'Calories'} / Day</td><td class="cinfoHd" align="right">Pace</td></tr>
+        <tr style="background:#f4fbf0;"><td><b>Maintain Weight</b></td><td align="right"><b>${Math.round(tdee * factor).toLocaleString()}</b></td><td align="right">0 ${lossUnit}</td></tr>
+        <tr><td>Mild Weight Loss</td><td align="right"><b>${Math.round((tdee - 250) * factor).toLocaleString()}</b></td><td align="right">-${stepSmall} ${lossUnit}</td></tr>
+        <tr style="background:#fff7e6;"><td><b>Weight Loss</b></td><td align="right"><b><font color="#d97706">${Math.round((tdee - 500) * factor).toLocaleString()}</font></b></td><td align="right">-${stepMed} ${lossUnit}</td></tr>
+        <tr><td>Extreme Weight Loss</td><td align="right"><b>${Math.round((tdee - 1000) * factor).toLocaleString()}</b></td><td align="right">-${stepLarge} ${lossUnit}</td></tr>
       </table>
     `;
   };
@@ -2661,12 +2717,42 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Student Loan Calculator & Payment Calculator
+  // Student Loan Calculator & Payment Calculator (supports Fixed Term & Fixed Payments)
   engines['student-loan-calculator'] = engines['payment-calculator'] = function () {
+    var ctype = (getIn('ctype', 'fixterm') || 'fixterm').toLowerCase();
     var loan = getFloat('cloanamount', 30000) || getFloat('cloanamount1', 30000);
-    var term = getFloat('cloanterm', 10) || getFloat('cloanterm1', 10);
     var rate = getFloat('cinterestrate', 6.8) || getFloat('cinterestrate1', 6.8);
     var r = (rate / 100) / 12;
+
+    if (ctype === 'fixpay') {
+      var mPay = getFloat('cmonthlypay', 2000);
+      var minPay = loan * r;
+      var c = getResultContainer();
+      if (!c) return;
+      if (r > 0 && mPay <= minPay) {
+        c.innerHTML = `<h2 class="h2result">Payment Too Low</h2><p style="padding:10px;color:#ef4444;">Monthly payment (${fmtMoney(mPay)}) must exceed first month's interest (${fmtMoney(minPay)}) to pay off the loan.</p>`;
+        return;
+      }
+      var months = r === 0 ? Math.ceil(loan / (mPay || 1)) : -Math.log(1 - (loan * r) / mPay) / Math.log(1 + r);
+      var yrs = Math.floor(months / 12);
+      var remMo = Math.round((months % 12) * 10) / 10;
+      var totalPaid = mPay * months;
+      var totalInt = Math.max(0, totalPaid - loan);
+      c.innerHTML = `
+        <h2 class="h2result">Payoff Time: ${fmtNum(months, 1)} months (${fmtNum(months / 12, 2)} years)</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr><td>Loan Amount</td><td align="right">${fmtMoney(loan)}</td></tr>
+          <tr><td>Monthly Payment</td><td align="right"><b>${fmtMoney(mPay)}</b></td></tr>
+          <tr><td>Interest Rate</td><td align="right">${fmtNum(rate, 2)}%</td></tr>
+          <tr style="background:#eaf2e8;"><td><b>Time to Pay Off</b></td><td align="right"><font size="+1"><b>${yrs} years, ${remMo} months (${Math.ceil(months)} payments)</b></font></td></tr>
+          <tr><td>Total Interest Paid</td><td align="right"><font color="green"><b>${fmtMoney(totalInt)}</b></font></td></tr>
+          <tr><td>Total Payments</td><td align="right"><b>${fmtMoney(totalPaid)}</b></td></tr>
+        </table>
+      `;
+      return;
+    }
+
+    var term = getFloat('cloanterm', 10) || getFloat('cloanterm1', 10);
     var n = term * 12;
     var pmt = r === 0 ? (loan / n) : (loan * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
     var total = pmt * n;
@@ -3295,54 +3381,83 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Lean Body Mass Calculator & Body Type Calculator
-  engines['lean-body-mass-calculator'] = engines['body-type-calculator'] = function () {
-    var sex = getIn('csex', 'm');
-    var lbs = getFloat('bodyweight', 160) || getFloat('cpound', 160);
-    var feet = getFloat('bodyheightfeet', 5) || getFloat('cheightfeet', 5);
-    var inch = getFloat('bodyheightinch', 10) || getFloat('cheightinch', 10);
-    var w_kg = lbs * 0.45359237;
-    var h_cm = (feet * 12 + inch) * 2.54;
-
-    // Boer Formula
-    var lbm = (sex === 'f' || sex === 'female') ?
-      (0.252 * w_kg + 0.473 * h_cm - 48.3) :
-      (0.407 * w_kg + 0.267 * h_cm - 19.2);
-    lbm = Math.max(20, Math.min(w_kg * 0.95, lbm));
-    var lbmLbs = lbm * 2.20462;
-    var fatLbs = lbs - lbmLbs;
-    var fatPct = (fatLbs / lbs) * 100;
+  // Lean Body Mass Calculator & Body Type Calculator (US + Metric)
+  engines['lean-body-mass-calculator'] = function () {
+    var m = getBodyMetrics({ feet: 5, inch: 10, lbs: 160, cm: 178, kg: 70 });
+    var lbm = (m.sex === 'f')
+      ? (0.252 * m.w_kg + 0.473 * m.h_cm - 48.3)
+      : (0.407 * m.w_kg + 0.267 * m.h_cm - 19.2);
+    lbm = Math.max(20, Math.min(m.w_kg * 0.95, lbm));
+    var lbmDisp = m.isMetric ? lbm : lbm * 2.20462;
+    var wtDisp = m.isMetric ? m.w_kg : m.w_lbs;
+    var u = m.isMetric ? 'kg' : 'lbs';
+    var fatDisp = wtDisp - lbmDisp;
+    var fatPct = (fatDisp / (wtDisp || 1)) * 100;
+    var jamesKg = (m.sex === 'f' ? 1.07 * m.w_kg - 148 * Math.pow(m.w_kg / m.h_cm, 2) : 1.1 * m.w_kg - 128 * Math.pow(m.w_kg / m.h_cm, 2));
 
     var c = getResultContainer();
     if (!c) return;
     c.innerHTML = `
-      <h2 class="h2result">Lean Body Mass: ${fmtNum(lbmLbs, 1)} lbs (${fmtNum(lbm, 1)} kg)</h2>
+      <h2 class="h2result">Lean Body Mass: ${fmtNum(lbmDisp, 1)} ${u}</h2>
       <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>Lean Body Mass (Boer Formula)</b></td><td align="right"><font size="+1"><b>${fmtNum(lbmLbs, 1)} lbs</b></font></td></tr>
-        <tr><td>Estimated Body Fat Weight</td><td align="right">${fmtNum(fatLbs, 1)} lbs</td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Lean Body Mass (Boer Formula)</b></td><td align="right"><font size="+1"><b>${fmtNum(lbmDisp, 1)} ${u}</b></font></td></tr>
+        <tr><td>Estimated Body Fat Weight</td><td align="right">${fmtNum(fatDisp, 1)} ${u}</td></tr>
         <tr><td>Estimated Body Fat Percentage</td><td align="right"><b>${fmtNum(fatPct, 1)}%</b></td></tr>
-        <tr><td>James Formula LBM</td><td align="right">${fmtNum((sex === 'f' ? 1.07 * w_kg - 148 * Math.pow(w_kg/h_cm, 2) : 1.1 * w_kg - 128 * Math.pow(w_kg/h_cm, 2)) * 2.20462, 1)} lbs</td></tr>
+        <tr><td>James Formula LBM</td><td align="right">${fmtNum(m.isMetric ? jamesKg : jamesKg * 2.20462, 1)} ${u}</td></tr>
       </table>
     `;
   };
 
-  // Macro Calculator & Carbohydrate & Protein & Fat Intake
+  engines['body-type-calculator'] = function () {
+    function toIn(name, unitName, defVal) {
+      var v = getFloat(name, defVal);
+      var u = (getIn(unitName, 'inch') || 'inch').toLowerCase();
+      return u.indexOf('cm') !== -1 ? v / 2.54 : v;
+    }
+    var bust = toIn('bustsize', 'bustsizeunit', 36);
+    var waist = toIn('waistsize', 'waistsizeunit', 24);
+    var highHip = toIn('highhipsize', 'highhipsizeunit', 32);
+    var hip = toIn('hipsize', 'hipsizeunit', 36);
+    var shape = 'Rectangle / Banana';
+    if ((bust - hip <= 1 && hip - bust < 3.6) && (bust - waist >= 9 || hip - waist >= 10)) shape = 'Hourglass';
+    else if (hip - bust >= 3.6 && hip - waist < 9) shape = 'Triangle (Pear)';
+    else if (bust - hip >= 3.6 && bust - waist < 9) shape = 'Inverted Triangle';
+    else if (waist / (hip || 1) >= 0.85) shape = 'Apple / Round';
+
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Body Type: ${shape}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Identified Body Shape</b></td><td align="right"><font size="+1" color="green"><b>${shape}</b></font></td></tr>
+        <tr><td>Waist-to-Hip Ratio (WHR)</td><td align="right"><b>${fmtNum(waist / (hip || 1), 2)}</b></td></tr>
+        <tr><td>Bust / Waist / Hip (in)</td><td align="right">${fmtNum(bust, 1)} / ${fmtNum(waist, 1)} / ${fmtNum(hip, 1)} (High Hip: ${fmtNum(highHip, 1)})</td></tr>
+      </table>
+    `;
+  };
+
+  // Macro Calculator & Carbohydrate & Protein & Fat Intake (US + Metric + Activity + Goal)
   engines['macro-calculator'] = engines['carbohydrate-calculator'] = engines['protein-calculator'] = engines['fat-intake-calculator'] = function () {
-    var sex = getIn('csex', 'm');
-    var age = getFloat('cage', 25);
-    var feet = getFloat('cheightfeet', 5);
-    var inch = getFloat('cheightinch', 10);
-    var lbs = getFloat('cpound', 165);
-    var w_kg = lbs * 0.45359237;
-    var h_cm = (feet * 12 + inch) * 2.54;
+    var m = getBodyMetrics({ feet: 5, inch: 10, lbs: 165, cm: 180, kg: 75 });
+    var act = getFloat('cactivity', 1.465);
+    var goal = (getIn('cgoal', 'm') || 'm').toLowerCase();
+    var cformula = (getIn('cformula', 'm') || 'm').toLowerCase();
+    var fatPct = getFloat('cfatpct', 20);
 
-    // Mifflin-St Jeor BMR
-    var bmr = 10 * w_kg + 6.25 * h_cm - 5 * age + (sex === 'f' ? -161 : 5);
-    var tdee = bmr * 1.45; // moderate activity baseline
+    var bmr = cformula === 'h'
+      ? (m.sex === 'm' ? 13.397 * m.w_kg + 4.799 * m.h_cm - 5.677 * m.age + 88.362 : 9.247 * m.w_kg + 3.098 * m.h_cm - 4.330 * m.age + 447.593)
+      : (cformula === 'k' ? (370 + 21.6 * (1 - fatPct / 100) * m.w_kg) : (10 * m.w_kg + 6.25 * m.h_cm - 5 * m.age + (m.sex === 'm' ? 5 : -161)));
+    var tdee = bmr * act;
+    if (goal === 'l' || goal === 'lose') tdee -= 500;
+    else if (goal === 'l1') tdee -= 250;
+    else if (goal === 'l2') tdee -= 1000;
+    else if (goal === 'g' || goal === 'gain') tdee += 500;
+    else if (goal === 'g1') tdee += 250;
+    tdee = Math.max(1000, tdee);
 
-    var proteinGrams = Math.round(w_kg * 2.0); // 2g/kg
-    var proteinCals = proteinGrams * 4;
-    var fatCals = tdee * 0.25; // 25% of calories
+    var proteinCals = tdee * 0.25;
+    var proteinGrams = Math.round(proteinCals / 4);
+    var fatCals = tdee * 0.25;
     var fatGrams = Math.round(fatCals / 9);
     var carbCals = Math.max(0, tdee - proteinCals - fatCals);
     var carbGrams = Math.round(carbCals / 4);
@@ -3350,14 +3465,14 @@ engines['grade-calculator'] = function () {
     var c = getResultContainer();
     if (!c) return;
     c.innerHTML = `
-      <h2 class="h2result">Daily Target: ${Math.round(tdee)} Calories</h2>
+      <h2 class="h2result">Daily Target: ${Math.round(tdee).toLocaleString()} Calories</h2>
       <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>Total Daily Calorie Need (TDEE)</b></td><td align="right"><font size="+1"><b>${Math.round(tdee)} kcal / day</b></font></td></tr>
-        <tr><td><b>Protein</b> (4 kcal/g)</td><td align="right"><b>${proteinGrams} g</b> (${Math.round(proteinCals)} kcal - ${Math.round((proteinCals/tdee)*100)}%)</td></tr>
-        <tr><td><b>Carbohydrates</b> (4 kcal/g)</td><td align="right"><b>${carbGrams} g</b> (${Math.round(carbCals)} kcal - ${Math.round((carbCals/tdee)*100)}%)</td></tr>
-        <tr><td><b>Dietary Fats</b> (9 kcal/g)</td><td align="right"><b>${fatGrams} g</b> (${Math.round(fatCals)} kcal - ${Math.round((fatCals/tdee)*100)}%)</td></tr>
-        <tr style="background:#f0f4f8;"><td>Weight Loss Target (-500 kcal)</td><td align="right"><b>${Math.round(tdee - 500)} kcal / day</b></td></tr>
-        <tr style="background:#f0f4f8;"><td>Muscle Gain Target (+300 kcal)</td><td align="right"><b>${Math.round(tdee + 300)} kcal / day</b></td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Target Food Energy</b></td><td align="right"><font size="+1"><b>${Math.round(tdee).toLocaleString()} kcal / day</b></font></td></tr>
+        <tr><td><b>Protein</b> (4 kcal/g)</td><td align="right"><b>${proteinGrams} g</b> (${Math.round(proteinCals)} kcal - ${Math.round((proteinCals / tdee) * 100)}%)</td></tr>
+        <tr><td><b>Carbohydrates</b> (4 kcal/g)</td><td align="right"><b>${carbGrams} g</b> (${Math.round(carbCals)} kcal - ${Math.round((carbCals / tdee) * 100)}%)</td></tr>
+        <tr><td><b>Dietary Fats</b> (9 kcal/g)</td><td align="right"><b>${fatGrams} g</b> (${Math.round(fatCals)} kcal - ${Math.round((fatCals / tdee) * 100)}%)</td></tr>
+        <tr style="background:#f0f4f8;"><td>Weight Loss Target (-500 kcal)</td><td align="right"><b>${Math.round(Math.max(800, tdee - 500)).toLocaleString()} kcal / day</b></td></tr>
+        <tr style="background:#f0f4f8;"><td>Weight Gain Target (+500 kcal)</td><td align="right"><b>${Math.round(tdee + 500).toLocaleString()} kcal / day</b></td></tr>
       </table>
     `;
   };
@@ -4081,7 +4196,113 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Statistics & Mean, Median, Mode, Range
+  // Interactive Statistics Keypad (cs()) + Comma-Separated Statistics & Mean/Median/Mode/Range
+  if (typeof window !== 'undefined') {
+    var staValues = [];
+    var staEntry = '0';
+    var staResetOnDigit = true;
+
+    function staRenderList() {
+      var listEl = document.getElementById('staInPutList');
+      if (!listEl) return;
+      listEl.innerHTML = staValues.map(function (v, idx) {
+        return '<div><span class="staInPutListX" style="cursor:pointer;" onclick="window._staRemove(' + idx + ')">x</span> ' + v + '</div>';
+      }).join('');
+    }
+    window._staRemove = function (idx) {
+      staValues.splice(idx, 1);
+      staRenderList();
+    };
+    window.cs = function (cmd) {
+      var outEl = document.getElementById('staOutPut');
+      var msgEl = document.getElementById('staquickmsg');
+      if (!outEl) return false;
+      var s = String(cmd);
+
+      if (/^[0-9]$/.test(s)) {
+        staEntry = (staResetOnDigit || staEntry === '0') ? s : (staEntry + s);
+        staResetOnDigit = false;
+        outEl.textContent = staEntry;
+        return false;
+      }
+      if (s === '.') {
+        if (staResetOnDigit) { staEntry = '0.'; staResetOnDigit = false; }
+        else if (staEntry.indexOf('.') === -1) staEntry += '.';
+        outEl.textContent = staEntry;
+        return false;
+      }
+      if (s === '+/-') {
+        if (staEntry.charAt(0) === '-') staEntry = staEntry.slice(1);
+        else if (staEntry !== '0') staEntry = '-' + staEntry;
+        outEl.textContent = staEntry;
+        return false;
+      }
+      if (s === 'EXP') {
+        if (staEntry.indexOf('e') === -1 && staEntry.indexOf('E') === -1) staEntry += 'e';
+        staResetOnDigit = false;
+        outEl.textContent = staEntry;
+        return false;
+      }
+      if (s === 'C') {
+        staEntry = '0';
+        staResetOnDigit = true;
+        outEl.textContent = '0';
+        if (msgEl) msgEl.textContent = 'Entry cleared';
+        return false;
+      }
+      if (s === 'CAS') {
+        staValues = [];
+        staEntry = '0';
+        staResetOnDigit = true;
+        outEl.textContent = '0';
+        staRenderList();
+        if (msgEl) msgEl.textContent = 'All data cleared';
+        return false;
+      }
+      if (s === 'ADD') {
+        var val = parseFloat(staEntry);
+        if (!isNaN(val)) {
+          staValues.push(val);
+          staRenderList();
+          if (msgEl) msgEl.textContent = 'Added ' + val + ' (Count = ' + staValues.length + ')';
+        }
+        staEntry = '0';
+        staResetOnDigit = true;
+        outEl.textContent = '0';
+        return false;
+      }
+      if (staValues.length === 0) {
+        if (msgEl) msgEl.textContent = 'Enter a value and press ADD first';
+        return false;
+      }
+      var n = staValues.length;
+      var sum = staValues.reduce(function (a, b) { return a + b; }, 0);
+      var sum2 = staValues.reduce(function (a, b) { return a + b * b; }, 0);
+      var mean = sum / n;
+      var varPop = staValues.reduce(function (a, b) { return a + Math.pow(b - mean, 2); }, 0) / n;
+      var varSamp = n > 1 ? (varPop * n) / (n - 1) : 0;
+      var resVal = 0, label = '';
+      if (s === 'x') { resVal = mean; label = 'Mean (x̄)'; }
+      else if (s === 'x2') { resVal = sum2 / n; label = 'Mean of Squares'; }
+      else if (s === 'sum') { resVal = sum; label = 'Sum (Σx)'; }
+      else if (s === 'sum2') { resVal = sum2; label = 'Sum of Squares (Σx²)'; }
+      else if (s === 'psd') { resVal = Math.sqrt(varPop); label = 'Population SD (σ)'; }
+      else if (s === 'psd2') { resVal = varPop; label = 'Population Variance (σ²)'; }
+      else if (s === 's') { resVal = Math.sqrt(varSamp); label = 'Sample SD (s)'; }
+      else if (s === 's2') { resVal = varSamp; label = 'Sample Variance (s²)'; }
+      else if (s === 'GM') {
+        var allPos = staValues.every(function (v) { return v > 0; });
+        resVal = allPos ? Math.pow(staValues.reduce(function (a, b) { return a * b; }, 1), 1 / n) : NaN;
+        label = 'Geometric Mean';
+      }
+      staEntry = isNaN(resVal) ? 'N/A' : String(Number(resVal.toPrecision(8)));
+      staResetOnDigit = true;
+      outEl.textContent = staEntry;
+      if (msgEl) msgEl.textContent = label + ' (N=' + n + ')';
+      return false;
+    };
+  }
+
   engines['statistics-calculator'] = engines['mean-median-mode-range-calculator'] = function () {
     var raw = getIn('numberinputs', '10, 2, 38, 23, 38, 23, 21');
     var nums = raw.split(/[,\s]+/).map(function (s) { return parseFloat(s); }).filter(function (n) { return !isNaN(n); });
@@ -4288,21 +4509,67 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Gas Mileage & Mileage Reimbursement
+  // Gas Mileage (US + Metric tabs) & Mileage Reimbursement
   engines['gas-mileage-calculator'] = engines['mileage-calculator'] = function () {
-    var dist = getFloat('tripdistance', 350) || getFloat('cdistance', 350);
-    var gal = getFloat('fuelused', 14) || getFloat('cgallons', 14);
-    var mpg = dist / (gal || 1);
-    var irsRate = 0.67; // 2025/2026 IRS standard rate
-    var reimb = dist * irsRate;
+    var slug = getPageSlug();
+    if (slug === 'gas-mileage-calculator') {
+      var ctype = (getIn('ctype', 'standard') || 'standard').toLowerCase();
+      var isMetric = ctype === 'metric';
+      var dist, fuel, price, distUnit, fuelUnit, mpg, lp100, kmpl, costTotal, costPerUnit;
+      if (isMetric) {
+        var mCurr = getFloat('mucodreading', 18900);
+        var mPrev = getFloat('mupodreading', 18300);
+        dist = Math.max(0, mCurr - mPrev);
+        fuel = Math.max(0.001, getFloat('mugasputin', 50));
+        price = Math.max(0, getFloat('mugasprice', 1));
+        kmpl = dist / fuel;
+        lp100 = dist > 0 ? (fuel / dist) * 100 : 0;
+        mpg = kmpl * 2.35214583;
+        distUnit = 'km'; fuelUnit = 'L';
+        costTotal = fuel * price;
+        costPerUnit = dist > 0 ? costTotal / dist : 0;
+      } else {
+        var uCurr = getFloat('uscodreading', 12360);
+        var uPrev = getFloat('uspodreading', 12000);
+        dist = Math.max(0, uCurr - uPrev);
+        fuel = Math.max(0.001, getFloat('usgasputin', 15));
+        price = Math.max(0, getFloat('usgasprice', 3));
+        mpg = dist / fuel;
+        lp100 = mpg > 0 ? 235.214583 / mpg : 0;
+        kmpl = mpg / 2.35214583;
+        distUnit = 'mi'; fuelUnit = 'gal';
+        costTotal = fuel * price;
+        costPerUnit = dist > 0 ? costTotal / dist : 0;
+      }
+      var c = getResultContainer();
+      if (!c) return;
+      c.innerHTML = `
+        <h2 class="h2result">Gas Mileage: ${isMetric ? fmtNum(kmpl, 2) + ' km/L' : fmtNum(mpg, 2) + ' MPG'}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr><td>Distance Driven</td><td align="right">${fmtNum(dist, 1)} ${distUnit}</td></tr>
+          <tr><td>Fuel Used</td><td align="right">${fmtNum(fuel, 2)} ${fuelUnit}</td></tr>
+          <tr style="background:#eaf2e8;"><td><b>Miles Per Gallon (US)</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(mpg, 2)} MPG</b></font></td></tr>
+          <tr><td>Liters per 100 km</td><td align="right"><b>${fmtNum(lp100, 2)} L/100km</b></td></tr>
+          <tr><td>Kilometers per Liter</td><td align="right"><b>${fmtNum(kmpl, 2)} km/L</b></td></tr>
+          ${price > 0 ? `<tr><td>Total Gas Cost</td><td align="right">${fmtMoney(costTotal)} (${fmtMoney(costPerUnit, 3)} / ${distUnit})</td></tr>` : ''}
+        </table>
+      `;
+      return;
+    }
 
-    var c = getResultContainer();
-    if (!c) return;
-    c.innerHTML = `
-      <h2 class="h2result">Gas Mileage: ${fmtNum(mpg, 2)} MPG</h2>
+    var dist2 = getFloat('tripdistance', 350) || getFloat('cdistance', 350);
+    var gal = getFloat('fuelused', 14) || getFloat('cgallons', 14);
+    var mpg2 = dist2 / (gal || 1);
+    var irsRate = 0.67;
+    var reimb = dist2 * irsRate;
+
+    var c2 = getResultContainer();
+    if (!c2) return;
+    c2.innerHTML = `
+      <h2 class="h2result">Gas Mileage: ${fmtNum(mpg2, 2)} MPG</h2>
       <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>Fuel Economy</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(mpg, 2)} MPG</b></font></td></tr>
-        <tr><td>Metric Equivalent</td><td align="right">${fmtNum(235.215 / (mpg || 1), 2)} L/100km</td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Fuel Economy</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(mpg2, 2)} MPG</b></font></td></tr>
+        <tr><td>Metric Equivalent</td><td align="right">${fmtNum(235.215 / (mpg2 || 1), 2)} L/100km</td></tr>
         <tr><td>IRS Business Reimbursement (67&cent;/mi)</td><td align="right"><b>${fmtMoney(reimb)}</b></td></tr>
       </table>
     `;
@@ -4680,48 +4947,632 @@ engines['grade-calculator'] = function () {
     `;
   };
 
-  // Base64 & URL Encode/Decode
-  engines['base64-encode-decode'] = engines['url-encode-decode'] = function () {
-    var text = getIn('sourceText', 'Hello World');
-    var b64 = 'SGVsbG8gV29ybGQ=';
-    try { b64 = btoa(text); } catch (e) {}
+  // Dedicated Engines Replacing Generic / Wrong Aliases
+  engines['overweight-calculator'] = engines['anorexic-bmi-calculator'] = function () {
+    var m = getBodyMetrics({ feet: 5, inch: 10, lbs: 160, cm: 180, kg: 65 });
+    var bmi = m.w_kg / (m.h_m * m.h_m);
+    var wUnit = m.isMetric ? 'kg' : 'lbs';
+    var curW = m.isMetric ? m.w_kg : m.w_lbs;
+    var minNormal = (18.5 * m.h_m * m.h_m) * (m.isMetric ? 1 : 2.20462262);
+    var maxNormal = (25.0 * m.h_m * m.h_m) * (m.isMetric ? 1 : 2.20462262);
+    var slug = getPageSlug();
+    var status = 'Normal weight';
+    var advice = 'Within healthy BMI range (18.5 - 25 kg/m²).';
+    if (bmi < 15) { status = 'Extreme Anorexia Risk'; advice = 'Gain at least ' + fmtNum(minNormal - curW, 1) + ' ' + wUnit + ' to reach healthy weight.'; }
+    else if (bmi < 17.5) { status = slug.indexOf('anorexic') !== -1 ? 'Likely Anorexic (BMI < 17.5)' : 'Severely Underweight'; advice = 'Gain ' + fmtNum(minNormal - curW, 1) + ' ' + wUnit + ' to reach normal BMI.'; }
+    else if (bmi < 18.5) { status = 'Underweight'; advice = 'Gain ' + fmtNum(minNormal - curW, 1) + ' ' + wUnit + ' to reach normal BMI.'; }
+    else if (bmi < 25) { status = 'Normal / Healthy Weight'; }
+    else if (bmi < 30) { status = 'Overweight'; advice = 'Lose ' + fmtNum(curW - maxNormal, 1) + ' ' + wUnit + ' to reach normal BMI.'; }
+    else { status = 'Obese (BMI ≥ 30)'; advice = 'Lose ' + fmtNum(curW - maxNormal, 1) + ' ' + wUnit + ' to reach normal BMI.'; }
 
     var c = getResultContainer();
     if (!c) return;
     c.innerHTML = `
-      <h2 class="h2result">Encoding Result</h2>
+      <h2 class="h2result">BMI = ${bmi.toFixed(1)} kg/m&sup2; (${status})</h2>
       <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>Base64 Encoded</b></td><td align="right"><font size="+1" color="green"><b>${b64}</b></font></td></tr>
-        <tr><td>URL Encoded</td><td align="right"><b>${encodeURIComponent(text)}</b></td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Assessment</b></td><td align="right"><font size="+1" color="${bmi >= 18.5 && bmi < 25 ? 'green' : '#d97706'}"><b>${status}</b></font></td></tr>
+        <tr><td>Your Weight</td><td align="right">${fmtNum(curW, 1)} ${wUnit}</td></tr>
+        <tr><td>Healthy Weight Range</td><td align="right"><b>${fmtNum(minNormal, 1)} – ${fmtNum(maxNormal, 1)} ${wUnit}</b></td></tr>
+        <tr><td>Guidance</td><td align="right">${advice}</td></tr>
       </table>
     `;
   };
 
-  // Roman Numeral Converter
+  engines['height-calculator'] = function () {
+    var m = getBodyMetrics({ age: 5, feet: 3, inch: 8, lbs: 40, cm: 112, kg: 18 });
+    var isMetric = m.isMetric;
+    var momCm = isMetric ? getFloat('mcheightmeter', 165) : (getFloat('mcheightfeet', 5) * 12 + getFloat('mcheightinch', 5)) * 2.54;
+    var dadCm = isMetric ? getFloat('fcheightmeter', 178) : (getFloat('fcheightfeet', 5) * 12 + getFloat('fcheightinch', 10)) * 2.54;
+    var midParentalCm = (momCm + dadCm + (m.sex === 'm' ? 13 : -13)) / 2;
+    // Blend child current height growth percentile with mid-parental expectation
+    var cdcAdultMean = m.sex === 'm' ? 176.5 : 163.3;
+    var estAdultCm = m.age >= 18 ? m.h_cm : (midParentalCm * 0.65 + (m.h_cm * (cdcAdultMean / Math.max(85, 76 + m.age * 5.6))) * 0.35);
+    estAdultCm = Math.max(120, Math.min(220, estAdultCm));
+    var totalIn = estAdultCm / 2.54;
+    var ft = Math.floor(totalIn / 12);
+    var inch = totalIn - ft * 12;
+
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Predicted Adult Height: ${ft} ft ${inch.toFixed(1)} in (${Math.round(estAdultCm)} cm)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Expected Adult Height</b></td><td align="right"><font size="+1" color="green"><b>${ft}' ${inch.toFixed(1)}" (${fmtNum(estAdultCm, 1)} cm)</b></font></td></tr>
+        <tr><td>Mid-Parental Estimate</td><td align="right">${fmtNum(midParentalCm, 1)} cm (${fmtNum(midParentalCm / 2.54, 1)} in)</td></tr>
+        <tr><td>Expected Range (&plusmn;2 in / 5 cm)</td><td align="right">${fmtNum(estAdultCm - 5, 0)} – ${fmtNum(estAdultCm + 5, 0)} cm</td></tr>
+      </table>
+    `;
+  };
+
+  engines['pregnancy-weight-gain-calculator'] = function () {
+    var ctype = (getIn('ctype', 'standard') || 'standard').toLowerCase();
+    var isMetric = ctype === 'metric';
+    var week = Math.max(1, Math.min(42, getInt('pstage', 20)));
+    var twins = (getIn('twins', '0') === '1' || getIn('twins', '') === 'y');
+    var h_m = isMetric ? (getFloat('cheightmeter', 165) / 100) : ((getFloat('cheightfeet', 5) * 12 + getFloat('cheightinch', 5)) * 0.0254);
+    var wBeforeKg = isMetric ? getFloat('ckgbefore', 58) : getFloat('cpoundbefore', 128) * 0.45359237;
+    var wNowKg = isMetric ? getFloat('ckgnow', 63) : getFloat('cpoundnow', 138) * 0.45359237;
+    var preBmi = wBeforeKg / ((h_m * h_m) || 2.5);
+    var minKg = 11.5, maxKg = 16, cat = 'Normal Weight';
+    if (twins) {
+      if (preBmi < 25) { minKg = 17; maxKg = 25; cat = 'Normal (Twins)'; }
+      else if (preBmi < 30) { minKg = 14; maxKg = 23; cat = 'Overweight (Twins)'; }
+      else { minKg = 11; maxKg = 19; cat = 'Obese (Twins)'; }
+    } else {
+      if (preBmi < 18.5) { minKg = 12.5; maxKg = 18; cat = 'Underweight'; }
+      else if (preBmi < 25) { minKg = 11.5; maxKg = 16; cat = 'Normal Weight'; }
+      else if (preBmi < 30) { minKg = 7; maxKg = 11.5; cat = 'Overweight'; }
+      else { minKg = 5; maxKg = 9; cat = 'Obese'; }
+    }
+    var factor = week <= 13 ? (week / 13) * 0.12 : 0.12 + ((week - 13) / 27) * 0.88;
+    var mult = isMetric ? 1 : 2.20462262;
+    var u = isMetric ? 'kg' : 'lbs';
+    var gained = (wNowKg - wBeforeKg) * mult;
+
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Recommended Gain (Week ${week}): ${fmtNum(minKg * factor * mult, 1)} – ${fmtNum(maxKg * factor * mult, 1)} ${u}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr><td>Pre-Pregnancy BMI</td><td align="right"><b>${preBmi.toFixed(1)} kg/m&sup2; (${cat})</b></td></tr>
+        <tr><td>Your Current Weight Gain</td><td align="right"><b>${fmtNum(gained, 1)} ${u}</b></td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Target Weight at Week ${week}</b></td><td align="right"><b>${fmtNum((wBeforeKg + minKg * factor) * mult, 1)} – ${fmtNum((wBeforeKg + maxKg * factor) * mult, 1)} ${u}</b></td></tr>
+        <tr><td>Total Recommended Gain (Full Term)</td><td align="right">${fmtNum(minKg * mult, 1)} – ${fmtNum(maxKg * mult, 1)} ${u}</td></tr>
+      </table>
+    `;
+  };
+
+  engines['pace-calculator'] = function () {
+    function parseHms(str, defSecs) {
+      var parts = String(str || '').trim().split(':').map(Number);
+      if (parts.some(isNaN)) return defSecs;
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      return (parts[0] || 0) * 60;
+    }
+    function fmtHms(s) {
+      s = Math.max(0, Math.round(s));
+      var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
+      return (h > 0 ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sc).padStart(2, '0');
+    }
+    var distUnitToMi = { Miles: 1, m: 1, Kilometers: 0.62137119, k: 0.62137119, Meters: 0.00062137119, Yards: 0.000568182 };
+    var form = lastSubmittedForm;
+    var activeType = (form && form.elements['ctype'] ? form.elements['ctype'].value : getIn('ctype', 'pace')).toLowerCase();
+
+    if (activeType === 'converter') {
+      var ccFrom = parseHms(getIn('ccfrom', '5:30'), 330);
+      var fromU = getIn('ccpaceunitfrom', 'tpm');
+      var toU = getIn('ccpaceunitto', 'tpk');
+      var mph = fromU === 'tpm' ? 3600 / (ccFrom || 1) : fromU === 'tpk' ? (3600 / (ccFrom || 1)) * 0.621371 : getFloat('ccfrom', 10);
+      if (fromU === 'kph') mph = getFloat('ccfrom', 10) * 0.621371;
+      var convStr = toU === 'tpk' ? fmtHms(3600 / (mph * 1.60934)) + ' /km' : toU === 'tpm' ? fmtHms(3600 / mph) + ' /mi' : fmtNum(toU === 'kph' ? mph * 1.60934 : mph, 2) + ' ' + toU;
+      var cr = getResultContainer();
+      if (cr) cr.innerHTML = `<h2 class="h2result">Converted Pace: ${convStr}</h2>`;
+      return;
+    }
+
+    var distVal = getFloat('cdistance', 5);
+    var distMi = distVal * (distUnitToMi[getIn('cdistanceunit', 'Miles')] || 1);
+    var timeSecs = document.getElementById('ctime') ? parseHms(getIn('ctime', '00:50:25'), 3025) : ((getFloat('ctimeh', 0) * 3600) + (getFloat('ctimem', 25) * 60) + getFloat('ctimes', 0));
+    var paceSecsPerUnit = parseHms(getIn('cpace', '00:08:10'), 490);
+    var pUnit = getIn('cpaceunit', 'tpm');
+    var paceMiSec = pUnit === 'tpk' ? paceSecsPerUnit * 1.60934 : paceSecsPerUnit;
+    if (activeType === 'time') timeSecs = distMi * paceMiSec;
+    else if (activeType === 'distance') distMi = timeSecs / (paceMiSec || 1);
+
+    var secPerMi = distMi > 0 ? timeSecs / distMi : 0;
+    var secPerKm = secPerMi / 1.60934;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Pace: ${fmtHms(secPerMi)} / mile (${fmtHms(secPerKm)} / km)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Pace per Mile</b></td><td align="right"><font size="+1" color="green"><b>${fmtHms(secPerMi)}</b></font></td></tr>
+        <tr><td>Pace per Kilometer</td><td align="right"><b>${fmtHms(secPerKm)}</b></td></tr>
+        <tr><td>Distance</td><td align="right">${fmtNum(distMi, 2)} miles (${fmtNum(distMi * 1.60934, 2)} km)</td></tr>
+        <tr><td>Total Time</td><td align="right">${fmtHms(timeSecs)}</td></tr>
+        <tr><td>Average Speed</td><td align="right">${fmtNum(distMi / ((timeSecs || 1) / 3600), 2)} mph (${fmtNum((distMi * 1.60934) / ((timeSecs || 1) / 3600), 2)} km/h)</td></tr>
+      </table>
+    `;
+  };
+
+  engines['voltage-drop-calculator'] = function () {
+    var ctype = (getIn('ctype', 'nec') || 'nec').toLowerCase();
+    var v = getFloat('voltage', 120) || 120;
+    var amps = getFloat('amperes', 1) || 1;
+    var phase = getIn('phase', 'ac');
+    var par = Math.max(1, getInt('noofconductor', 1));
+    var dist = getFloat('distance', 500);
+    var dUnit = getIn('distanceunit', 'feet');
+    var distFt = dUnit === 'meters' ? dist * 3.28084 : dUnit === 'miles' ? dist * 5280 : dUnit === 'kilometers' ? dist * 3280.84 : dist;
+
+    var ohmPerKft = 0.253;
+    if (ctype === 'nec') {
+      var cuTable = [3.1, 1.93, 1.21, 0.76, 0.49, 0.31, 0.25, 0.19, 0.15, 0.12, 0.1, 0.08, 0.06, 0.05, 0.04, 0.04, 0.03, 0.03, 0.03, 0.02, 0.02];
+      var idx = Math.max(0, Math.min(cuTable.length - 1, getInt('necwiresize', 6)));
+      ohmPerKft = cuTable[idx] * (getIn('necmaterial', 'copper') === 'aluminum' ? 1.64 : 1);
+    } else if (ctype === 'size') {
+      var rKm = getFloat('wiresize', 0.4066);
+      ohmPerKft = rKm * 0.3048 * (getIn('material', 'copper') === 'aluminum' ? 1.64 : 1);
+    } else {
+      var rRaw = getFloat('resistance', 1.2);
+      var ru = getIn('resistanceunit', 'okm');
+      ohmPerKft = ru === 'okm' ? rRaw * 0.3048 : ru === 'om' ? rRaw * 304.8 : ru === 'mom' ? rRaw * 0.3048 : ru === 'okf' ? rRaw : ru === 'of' ? rRaw * 1000 : rRaw;
+    }
+
+    var mult = phase === 'ac3' ? Math.sqrt(3) : 2;
+    var vDrop = (mult * (ohmPerKft / 1000) * amps * distFt) / par;
+    var pctDrop = (vDrop / v) * 100;
+    var vEnd = Math.max(0, v - vDrop);
+
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Voltage Drop: ${fmtNum(vDrop, 2)} V (${fmtNum(pctDrop, 2)}%)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Voltage Drop</b></td><td align="right"><font size="+1" color="${pctDrop > 5 ? '#d97706' : 'green'}"><b>${fmtNum(vDrop, 2)} V (${fmtNum(pctDrop, 2)}%)</b></font></td></tr>
+        <tr><td>Voltage at Load End</td><td align="right"><b>${fmtNum(vEnd, 2)} V</b></td></tr>
+        <tr><td>Source Voltage / Phase</td><td align="right">${v} V (${phase.toUpperCase()})</td></tr>
+        <tr><td>Effective Conductor Resistance</td><td align="right">${fmtNum(ohmPerKft, 3)} &Omega;/1000ft (${par}&times; parallel)</td></tr>
+      </table>
+    `;
+  };
+
+  engines['ohms-law-calculator'] = function () {
+    var scale = { uV: 1e-6, mV: 1e-3, V: 1, kV: 1e3, MV: 1e6, uA: 1e-6, mA: 1e-3, A: 1, kA: 1e3, MA: 1e6, uO: 1e-6, mO: 1e-3, O: 1, kO: 1e3, MO: 1e6, mW: 1e-3, W: 1, kW: 1e3, MW: 1e6 };
+    function valOf(id, unitId) {
+      var raw = getIn(id, '');
+      if (raw === '') return NaN;
+      var num = parseFloat(raw);
+      return isNaN(num) ? NaN : num * (scale[getIn(unitId, '')] || 1);
+    }
+    var V = valOf('v', 'vunit'), I = valOf('c', 'cunit'), R = valOf('r', 'runit'), P = valOf('p', 'punit');
+    if (!isNaN(V) && !isNaN(I)) { R = V / (I || 1); P = V * I; }
+    else if (!isNaN(V) && !isNaN(R)) { I = V / (R || 1); P = (V * V) / (R || 1); }
+    else if (!isNaN(I) && !isNaN(R)) { V = I * R; P = I * I * R; }
+    else if (!isNaN(P) && !isNaN(V)) { I = P / (V || 1); R = (V * V) / (P || 1); }
+    else if (!isNaN(P) && !isNaN(I)) { V = P / (I || 1); R = P / ((I * I) || 1); }
+    else if (!isNaN(P) && !isNaN(R)) { I = Math.sqrt(P / (R || 1)); V = Math.sqrt(P * R); }
+
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Ohm's Law Result</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Voltage (V)</b></td><td align="right"><b>${fmtNum(V, 4)} V</b></td></tr>
+        <tr><td><b>Current (I)</b></td><td align="right"><b>${fmtNum(I, 4)} A</b></td></tr>
+        <tr><td><b>Resistance (R)</b></td><td align="right"><b>${fmtNum(R, 4)} &Omega;</b></td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Power (P)</b></td><td align="right"><b>${fmtNum(P, 4)} W</b></td></tr>
+      </table>
+    `;
+  };
+
+  engines['percent-calculator'] = function () {
+    var form = lastSubmittedForm;
+    var c1 = getFloat('cpar1', 0), c2 = getFloat('cpar2', 0);
+    if (form && form.elements['cpar1']) { c1 = parseFloat(form.elements['cpar1'].value) || 0; c2 = parseFloat(form.elements['cpar2'].value) || 0; }
+    var res = (c1 / 100) * c2;
+    var f21a = getFloat('c21par1', 10), f21b = getFloat('c21par2', 50);
+    var pDiff = (f21a + f21b) !== 0 ? (Math.abs(f21a - f21b) / ((f21a + f21b) / 2)) * 100 : 0;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Percentage Result</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>${c1 || 10}% of ${c2 || 50}</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(res || ((getFloat('cparm1', 10) / 100) * getFloat('cparm2', 50)), 4)}</b></font></td></tr>
+        <tr><td>Percentage Difference (${f21a} vs ${f21b})</td><td align="right"><b>${fmtNum(pDiff, 2)}%</b></td></tr>
+      </table>
+    `;
+  };
+
+  engines['percent-off-calculator'] = function () {
+    var orig = getFloat('originalprice', getFloat('pricebefore', 39.99));
+    var disc = getFloat('pctoff', getFloat('discount', 15));
+    var hasExtra = getIn('hasextra', 'n') === 'y';
+    var extra = hasExtra ? getFloat('extrapctoff', 10) : 0;
+    var after1 = orig * (1 - disc / 100);
+    var finalP = after1 * (1 - extra / 100);
+    var saved = orig - finalP;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Final Price: ${fmtMoney(finalP)}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr><td>Original Price</td><td align="right">${fmtMoney(orig)}</td></tr>
+        <tr><td>Discount Applied</td><td align="right">${disc}%${hasExtra ? ' + ' + extra + '% extra' : ''}</td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Final Price</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(finalP)}</b></font></td></tr>
+        <tr><td>You Save</td><td align="right"><b>${fmtMoney(saved)}</b> (${fmtNum(orig > 0 ? (saved / orig) * 100 : 0, 2)}%)</td></tr>
+      </table>
+    `;
+  };
+
+  engines['standard-deviation-calculator'] = engines['average-calculator'] = function () {
+    var raw = getIn('numberinputs', '') || getIn('cnumber', '10, 2, 38, 23, 38, 23, 21');
+    var nums = raw.split(/[\s,]+/).map(parseFloat).filter(function (x) { return !isNaN(x); });
+    if (nums.length === 0) return;
+    var N = nums.length;
+    var sum = nums.reduce(function (a, b) { return a + b; }, 0);
+    var mean = sum / N;
+    var sumSq = nums.reduce(function (a, b) { return a + Math.pow(b - mean, 2); }, 0);
+    var sSD = N > 1 ? Math.sqrt(sumSq / (N - 1)) : 0;
+    var pSD = Math.sqrt(sumSq / N);
+    var sorted = nums.slice().sort(function (a, b) { return a - b; });
+    var median = N % 2 === 1 ? sorted[(N - 1) / 2] : (sorted[N / 2 - 1] + sorted[N / 2]) / 2;
+
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Statistical Summary</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr><td>Count (N)</td><td align="right">${N}</td></tr>
+        <tr><td>Sum (&Sigma;x)</td><td align="right">${fmtNum(sum)}</td></tr>
+        <tr><td>Mean (Average)</td><td align="right"><b>${fmtNum(mean, 4)}</b></td></tr>
+        <tr><td>Median</td><td align="right"><b>${fmtNum(median, 4)}</b></td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Sample Std Dev (s)</b></td><td align="right"><b>${fmtNum(sSD, 4)}</b></td></tr>
+        <tr><td>Population Std Dev (&sigma;)</td><td align="right"><b>${fmtNum(pSD, 4)}</b></td></tr>
+      </table>
+    `;
+  };
+
   engines['roman-numeral-converter'] = function () {
-    var num = getInt('number', 2026) || 2026;
+    var raw = String(getIn('v', '') || getIn('number', '2026')).trim().toUpperCase();
     var romanMap = [
       [1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'],
       [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'],
       [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']
     ];
-    var res = '', temp = num;
-    for (var i = 0; i < romanMap.length; i++) {
-      while (temp >= romanMap[i][0]) {
-        res += romanMap[i][1];
-        temp -= romanMap[i][0];
+    function toRoman(n) {
+      var res = '', t = Math.max(1, Math.min(3999, Math.floor(n)));
+      for (var i = 0; i < romanMap.length; i++) {
+        while (t >= romanMap[i][0]) { res += romanMap[i][1]; t -= romanMap[i][0]; }
       }
+      return res;
     }
+    function fromRoman(s) {
+      var vals = { M: 1000, D: 500, C: 100, L: 50, X: 10, V: 5, I: 1 }, total = 0;
+      for (var i = 0; i < s.length; i++) {
+        var cur = vals[s[i]] || 0, nxt = vals[s[i + 1]] || 0;
+        total += cur < nxt ? -cur : cur;
+      }
+      return total;
+    }
+    var isArabic = /^\d+$/.test(raw);
+    var arabic = isArabic ? parseInt(raw, 10) : fromRoman(raw);
+    var roman = isArabic ? toRoman(arabic) : raw;
 
     var c = getResultContainer();
     if (!c) return;
     c.innerHTML = `
-      <h2 class="h2result">${num} = ${res}</h2>
+      <h2 class="h2result">${arabic} = ${roman}</h2>
       <table class="cinfoT" width="100%" style="margin-top:10px;">
-        <tr style="background:#eaf2e8;"><td><b>Roman Numeral</b></td><td align="right"><font size="+1" color="green"><b>${res}</b></font></td></tr>
-        <tr><td>Arabic Number</td><td align="right">${num}</td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Roman Numeral</b></td><td align="right"><font size="+1" color="green"><b>${roman}</b></font></td></tr>
+        <tr><td>Arabic Number</td><td align="right"><b>${arabic}</b></td></tr>
       </table>
     `;
+  };
+
+  engines['wind-chill-calculator'] = function () {
+    var v = getFloat('windspeed', 15);
+    var vUnit = (getIn('windspeedunit', 'mph') || 'mph').toLowerCase();
+    var mph = vUnit.indexOf('km') !== -1 ? v * 0.621371 : vUnit.indexOf('m/s') !== -1 ? v * 2.23694 : v;
+    var t = getFloat('airtemperature', 10);
+    var tUnit = (getIn('airtemperatureunit', 'f') || 'f').toLowerCase();
+    var tf = tUnit.indexOf('c') !== -1 ? (t * 9 / 5 + 32) : t;
+    var wcF = (tf <= 50 && mph >= 3) ? (35.74 + 0.6215 * tf - 35.75 * Math.pow(mph, 0.16) + 0.4275 * tf * Math.pow(mph, 0.16)) : tf;
+    var wcC = (wcF - 32) * 5 / 9;
+
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Wind Chill: ${fmtNum(wcF, 1)}&deg;F (${fmtNum(wcC, 1)}&deg;C)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Feels Like (Fahrenheit)</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(wcF, 1)} &deg;F</b></font></td></tr>
+        <tr><td>Feels Like (Celsius)</td><td align="right"><b>${fmtNum(wcC, 1)} &deg;C</b></td></tr>
+      </table>
+    `;
+  };
+
+  engines['concrete-calculator'] = function () {
+    var toFt = { feet: 1, ft: 1, inch: 1 / 12, in: 1 / 12, yard: 3, yd: 3, meter: 3.28084, m: 3.28084, centimeter: 0.0328084, cm: 0.0328084 };
+    var L = getFloat('slablength', 5) * (toFt[getIn('slablengthunit', 'feet')] || 1);
+    var W = getFloat('slabwidth', 2.5) * (toFt[getIn('slabwidthunit', 'feet')] || 1);
+    var T = getFloat('slabthick', 5) * (toFt[getIn('slabthickunit', 'inch')] || (1 / 12));
+    var qty = Math.max(1, getInt('slabquantity', 1));
+    var cuFt = L * W * T * qty;
+    var cuYd = cuFt / 27;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Concrete Needed: ${cuYd.toFixed(2)} cubic yards</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Total Volume</b></td><td align="right"><font size="+1" color="green"><b>${cuYd.toFixed(2)} yd&sup3; (${cuFt.toFixed(2)} ft&sup3;)</b></font></td></tr>
+        <tr><td>Metric Volume</td><td align="right"><b>${fmtNum(cuFt * 0.0283168, 2)} m&sup3;</b></td></tr>
+        <tr><td>60-lb Bags Needed</td><td align="right">${Math.ceil(cuFt / 0.45)} bags</td></tr>
+        <tr><td>80-lb Bags Needed</td><td align="right">${Math.ceil(cuFt / 0.60)} bags</td></tr>
+      </table>
+    `;
+  };
+
+  engines['date-calculator'] = function () {
+    var m1 = getInt('today_Month_ID', 0) + 1, d1 = getInt('today_Day_ID', 1), y1 = getInt('today_Year_ID', 2026);
+    var m2 = getInt('ageat_Month_ID', 10) + 1, d2 = getInt('ageat_Day_ID', 21), y2 = getInt('ageat_Year_ID', 2026);
+    var a = new Date(y1, m1 - 1, d1), b = new Date(y2, m2 - 1, d2);
+    if (isNaN(a.getTime()) || isNaN(b.getTime())) return;
+    var addEnd = !!getIn('addendday', false);
+    var totalDays = Math.round(Math.abs(b - a) / 86400000) + (addEnd ? 1 : 0);
+    var weekdays = 0, weekends = 0;
+    var start = a <= b ? new Date(a) : new Date(b);
+    var limit = Math.min(totalDays, 36500);
+    for (var i = 0; i < limit; i++) {
+      var dow = start.getDay();
+      if (dow === 0 || dow === 6) weekends++; else weekdays++;
+      start.setDate(start.getDate() + 1);
+    }
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Difference: ${totalDays} days</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Calendar Days</b></td><td align="right"><font size="+1" color="green"><b>${totalDays} days</b></font></td></tr>
+        <tr><td>Weeks &amp; Days</td><td align="right"><b>${Math.floor(totalDays / 7)} weeks, ${totalDays % 7} days</b></td></tr>
+        <tr><td>Weekdays (Mon–Fri)</td><td align="right">${weekdays} days</td></tr>
+        <tr><td>Weekend Days (Sat–Sun)</td><td align="right">${weekends} days</td></tr>
+      </table>
+    `;
+  };
+
+  engines['time-calculator'] = function () {
+    var d1 = getFloat('tcday1', 0), h1 = getFloat('tchour1', 0), m1 = getFloat('tcminute1', 0), s1 = getFloat('tcsecond1', 0);
+    var d2 = getFloat('tcday2', 0), h2 = getFloat('tchour2', 0), m2 = getFloat('tcminute2', 0), s2 = getFloat('tcsecond2', 0);
+    var op = getIn('Op', '+') === '-' ? -1 : 1;
+    var sec1 = ((d1 * 24 + h1) * 60 + m1) * 60 + s1;
+    var sec2 = ((d2 * 24 + h2) * 60 + m2) * 60 + s2;
+    var tot = sec1 + op * sec2;
+    var sign = tot < 0 ? '-' : '';
+    var rem = Math.abs(tot);
+    var days = Math.floor(rem / 86400); rem %= 86400;
+    var hrs = Math.floor(rem / 3600); rem %= 3600;
+    var mins = Math.floor(rem / 60); var secs = Math.round(rem % 60);
+    if (document.getElementById('tcday3')) document.getElementById('tcday3').value = sign + days;
+    if (document.getElementById('tchour3')) document.getElementById('tchour3').value = hrs;
+    if (document.getElementById('tcminute3')) document.getElementById('tcminute3').value = mins;
+    if (document.getElementById('tcsecond3')) document.getElementById('tcsecond3').value = secs;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Result: ${sign}${days}d ${hrs}h ${mins}m ${secs}s</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Total Time</b></td><td align="right"><b>${sign}${days} days, ${hrs} hours, ${mins} minutes, ${secs} seconds</b></td></tr>
+        <tr><td>In Total Hours</td><td align="right">${fmtNum(tot / 3600, 4)} hours</td></tr>
+        <tr><td>In Total Minutes</td><td align="right">${fmtNum(tot / 60, 2)} minutes</td></tr>
+      </table>
+    `;
+  };
+
+  engines['time-duration-calculator'] = engines['hours-calculator'] = function () {
+    function parseToMins(hrStr, unitStr, fallbackMin) {
+      var u = (unitStr || 'a').toLowerCase();
+      if (String(hrStr).indexOf(':') !== -1) {
+        var pts = String(hrStr).split(':').map(Number);
+        var h = pts[0] || 0, m = pts[1] || 0;
+        if (u === 'p' && h < 12) h += 12;
+        if (u === 'a' && h === 12) h = 0;
+        return h * 60 + m;
+      }
+      var hh = parseFloat(hrStr);
+      if (isNaN(hh)) return fallbackMin;
+      if (u === 'p' && hh < 12) hh += 12;
+      if (u === 'a' && hh === 12) hh = 0;
+      return hh * 60;
+    }
+    var mStart, mEnd;
+    if (document.querySelector('[name="starttime"]')) {
+      mStart = parseToMins(getIn('starttime', '8:30'), getIn('startunit', 'a'), 510);
+      mEnd = parseToMins(getIn('endtime', '5:30'), getIn('endunit', 'p'), 1050);
+    } else {
+      mStart = parseToMins((getInt('starthour', 8) + ':' + getInt('startmin', 30)), getIn('startunit', 'a'), 510) + getInt('startsec', 0) / 60;
+      mEnd = parseToMins((getInt('endhour', 5) + ':' + getInt('endmin', 30)), getIn('endunit', 'p'), 1050) + getInt('endsec', 0) / 60;
+    }
+    var diffMin = mEnd >= mStart ? (mEnd - mStart) : (1440 - mStart + mEnd);
+    var hrs = Math.floor(diffMin / 60), mins = Math.round(diffMin % 60);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Duration: ${hrs} hours, ${mins} minutes</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Elapsed Time</b></td><td align="right"><font size="+1" color="green"><b>${hrs} hr ${mins} min</b></font></td></tr>
+        <tr><td>Decimal Hours</td><td align="right"><b>${fmtNum(diffMin / 60, 4)} hours</b></td></tr>
+        <tr><td>Total Minutes</td><td align="right">${Math.round(diffMin).toLocaleString()} minutes</td></tr>
+      </table>
+    `;
+  };
+
+  engines['roi-calculator'] = function () {
+    var inv = getFloat('beginbalance', getFloat('cinvested', 1000));
+    var ret = getFloat('endbalance', getFloat('creturned', 2000));
+    var yrs = getFloat('investmentlength', getFloat('cyears', 2.5));
+    if (getIn('investmenttime', 'length') === 'date') {
+      var dA = new Date(getIn('beginbalanceday', '2026-01-01'));
+      var dB = new Date(getIn('endbalanceday', '2030-12-31'));
+      if (!isNaN(dA.getTime()) && !isNaN(dB.getTime()) && dB > dA) yrs = (dB - dA) / (365.25 * 86400000);
+    }
+    var gain = ret - inv;
+    var roi = inv > 0 ? (gain / inv) * 100 : 0;
+    var annRoi = (inv > 0 && yrs > 0 && ret > 0) ? (Math.pow(ret / inv, 1 / yrs) - 1) * 100 : roi;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">ROI: ${roi.toFixed(2)}%</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr><td>Amount Invested</td><td align="right">${fmtMoney(inv)}</td></tr>
+        <tr><td>Amount Returned</td><td align="right">${fmtMoney(ret)}</td></tr>
+        <tr><td>Investment Gain</td><td align="right"><font color="${gain >= 0 ? 'green' : 'red'}"><b>${fmtMoney(gain)}</b></font></td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Return on Investment (ROI)</b></td><td align="right"><b>${roi.toFixed(2)}%</b></td></tr>
+        <tr><td>Annualized ROI (${fmtNum(yrs, 2)} yrs)</td><td align="right"><b>${annRoi.toFixed(2)}% / year</b></td></tr>
+      </table>
+    `;
+  };
+
+  engines['inflation-calculator'] = function () {
+    var amt = getFloat('cstartingamount2', getFloat('cstartingamount1', getFloat('camount', 100)));
+    var rate = getFloat('cinrate2', getFloat('cinrate3', getFloat('crate', 3)));
+    var yrs = getFloat('cinyear2', getFloat('cinyear3', getFloat('cyears', 10)));
+    var futureVal = amt * Math.pow(1 + rate / 100, yrs);
+    var pwrVal = amt / Math.pow(1 + rate / 100, yrs);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Future Equivalent: ${fmtMoney(futureVal)}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr><td>Initial Amount</td><td align="right">${fmtMoney(amt)}</td></tr>
+        <tr style="background:#eaf2e8;"><td><b>Purchasing Power Equivalent (+${yrs} yrs at ${rate}%)</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(futureVal)}</b></font></td></tr>
+        <tr><td>Today's Purchasing Power of ${fmtMoney(amt)} in ${yrs} yrs</td><td align="right">${fmtMoney(pwrVal)}</td></tr>
+      </table>
+    `;
+  };
+
+  engines['future-value-calculator'] = engines['present-value-calculator'] = engines['finance-calculator'] = function () {
+    var n = getFloat('cyearsv', getFloat('c1yearsv', getFloat('cyears', 10)));
+    var r = getFloat('cinterestratev', getFloat('c1interestratev', getFloat('cinterestrate', 6))) / 100;
+    var pv = getFloat('cstartingprinciplev', getFloat('cpresentvalue', 1000));
+    var pmt = getFloat('ccontributeamountv', getFloat('cperiodicpayment', 100));
+    var slug = getPageSlug();
+    var c = getResultContainer();
+    if (!c) return;
+    if (slug === 'present-value-calculator') {
+      var fv = getFloat('c1futurevalue', 1000);
+      var pvLump = fv / Math.pow(1 + r, n);
+      var pvAnnuity = r === 0 ? pmt * n : pmt * (1 - Math.pow(1 + r, -n)) / r;
+      c.innerHTML = `
+        <h2 class="h2result">Present Value: ${fmtMoney(pvLump)}</h2>
+        <table class="cinfoT" width="100%" style="margin-top:10px;">
+          <tr style="background:#eaf2e8;"><td><b>Present Value of Future Lump Sum (${fmtMoney(fv)})</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(pvLump)}</b></font></td></tr>
+          <tr><td>Total Interest Discount</td><td align="right">${fmtMoney(fv - pvLump)}</td></tr>
+          <tr><td>Present Value of Periodical Deposits (${fmtMoney(pmt)}/yr)</td><td align="right"><b>${fmtMoney(pvAnnuity)}</b></td></tr>
+        </table>
+      `;
+      return;
+    }
+    var factor = Math.pow(1 + r, n);
+    var fvTotal = pv * factor + (r === 0 ? pmt * n : pmt * ((factor - 1) / r));
+    c.innerHTML = `
+      <h2 class="h2result">Future Value: ${fmtMoney(fvTotal)}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Future Value (FV)</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(fvTotal)}</b></font></td></tr>
+        <tr><td>Starting Balance (PV)</td><td align="right">${fmtMoney(pv)}</td></tr>
+        <tr><td>Total Contributions</td><td align="right">${fmtMoney(pv + pmt * n)}</td></tr>
+        <tr><td>Total Interest</td><td align="right"><b>${fmtMoney(fvTotal - pv - pmt * n)}</b></td></tr>
+      </table>
+    `;
+  };
+
+  engines['down-payment-calculator'] = function () {
+    var cash = getFloat('ccashamount1', 100000);
+    var downPct = Math.max(1, getFloat('cdownpaypct1', 20));
+    var incClose = !!getIn('cincludeclosingcost1', true);
+    var closeRate = incClose ? getFloat('cclosingcost1', 3) / 100 : 0;
+    var homePrice = cash / (downPct / 100 + closeRate);
+    var downAmt = homePrice * (downPct / 100);
+    var closeAmt = homePrice * closeRate;
+    var loan = homePrice - downAmt;
+    var r = (getFloat('cinterest1', 7.282) / 100) / 12;
+    var n = getFloat('cloanterm1', 30) * 12;
+    var moPmt = r === 0 ? loan / n : (loan * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Affordable Home Price: ${fmtMoney(homePrice)}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Maximum Home Price</b></td><td align="right"><font size="+1" color="green"><b>${fmtMoney(homePrice)}</b></font></td></tr>
+        <tr><td>Down Payment (${downPct}%)</td><td align="right"><b>${fmtMoney(downAmt)}</b></td></tr>
+        <tr><td>Estimated Closing Costs</td><td align="right">${fmtMoney(closeAmt)}</td></tr>
+        <tr><td>Loan Amount</td><td align="right">${fmtMoney(loan)}</td></tr>
+        <tr><td>Monthly Mortgage Payment</td><td align="right"><b>${fmtMoney(moPmt)} / mo</b></td></tr>
+      </table>
+    `;
+  };
+
+  engines['weight-calculator'] = function () {
+    var toKg = { kilogram: 1, kg: 1, gram: 0.001, g: 0.001, milligram: 1e-6, mg: 1e-6, pound: 0.45359237, lb: 0.45359237, lbs: 0.45359237, ounce: 0.02834952, oz: 0.02834952, stone: 6.35029318, metricton: 1000 };
+    var val = getFloat('fromnumber', getFloat('mass', 1));
+    var fU = String(getIn('unitFrom', 'kg')).toLowerCase().replace(/\s+/g, '');
+    var tU = String(getIn('unitTo', 'pound')).toLowerCase().replace(/\s+/g, '');
+    var kg = val * (toKg[fU] || 1);
+    var out = kg / (toKg[tU] || 0.45359237);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">${val} ${getIn('unitFrom', 'kg')} = ${fmtNum(out, 6)} ${getIn('unitTo', 'pound')}</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Converted Weight</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(out, 6)} ${getIn('unitTo', 'pound')}</b></font></td></tr>
+        <tr><td>Kilograms</td><td align="right">${fmtNum(kg, 4)} kg</td></tr>
+        <tr><td>Pounds</td><td align="right">${fmtNum(kg / 0.45359237, 4)} lbs</td></tr>
+      </table>
+    `;
+  };
+
+  engines['roofing-calculator'] = function () {
+    var area = getFloat('acarea', getFloat('mcarea', 2000));
+    var pitchIdx = Math.max(0, getInt('roofpitch', 4));
+    var angleDeg = getFloat('angle', 25);
+    var slope = getIn('ctype', 'pitch') === 'angle' ? (1 / Math.cos((angleDeg * Math.PI) / 180)) : Math.sqrt(1 + Math.pow(pitchIdx / 12, 2));
+    var roofArea = area * slope;
+    var squares = roofArea / 100;
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Estimated Roof Area: ${fmtNum(roofArea, 1)} sq ft</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Total Roof Area</b></td><td align="right"><font size="+1" color="green"><b>${fmtNum(roofArea, 1)} sq ft</b></font></td></tr>
+        <tr><td>Roofing Squares (100 sq ft/sq)</td><td align="right"><b>${fmtNum(squares, 2)} squares</b></td></tr>
+        <tr><td>Shingle Bundles (3/square)</td><td align="right"><b>${Math.ceil(squares * 3)} bundles</b></td></tr>
+      </table>
+    `;
+  };
+
+  engines['stair-calculator'] = function () {
+    var toIn = { inch: 1, in: 1, feet: 12, ft: 12, cm: 0.393701, m: 39.3701 };
+    var rise = getFloat('totalheight', 10) * (toIn[getIn('totalheightunit', 'feet')] || 12);
+    var runUnit = getFloat('run', 10) * (toIn[getIn('rununit', 'inch')] || 1);
+    var steps = Math.max(1, Math.round(rise / 7.5));
+    var stepRise = rise / steps;
+    var totalRun = runUnit * (steps - 1);
+    var c = getResultContainer();
+    if (!c) return;
+    c.innerHTML = `
+      <h2 class="h2result">Stairs Needed: ${steps} Steps (${fmtNum(stepRise, 2)}" rise/step)</h2>
+      <table class="cinfoT" width="100%" style="margin-top:10px;">
+        <tr style="background:#eaf2e8;"><td><b>Number of Steps (Risers)</b></td><td align="right"><font size="+1" color="green"><b>${steps}</b></font></td></tr>
+        <tr><td>Rise per Step</td><td align="right"><b>${fmtNum(stepRise, 2)} inches</b></td></tr>
+        <tr><td>Total Horizontal Run</td><td align="right"><b>${fmtNum(totalRun, 1)} inches (${fmtNum(totalRun / 12, 2)} ft)</b></td></tr>
+        <tr><td>Stringer Length</td><td align="right">${fmtNum(Math.sqrt(rise * rise + totalRun * totalRun), 1)} inches</td></tr>
+      </table>
+    `;
+  };
+
+  // Base64 & URL Encode/Decode (handled inline via bcEncode/ucEncode; keep safe no-op override)
+  engines['base64-encode-decode'] = engines['url-encode-decode'] = engines['password-generator'] = engines['resistor-calculator'] = function () {
+    return true;
   };
 
   // Golf Handicap & GDP & Dice Roller & Love Calculator & Embeds

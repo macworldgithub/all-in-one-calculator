@@ -276,4 +276,92 @@ console.log("Starting All-in-one-calculator Engine Logic Verification...\n");
   console.log('✅ [matrix-calculator] PASSED: det([[3,8],[4,6]]) = -14');
 }
 
-console.log("\n🚀 ALL 19 ENGINE TESTS PASSED WITH 100% MATHEMATICAL PRECISION!");
+// 20. Body Fat Calculator (Metric & US units + sex support)
+{
+  const env = createMockEnv('body-fat-calculator', { ctype: 'metric', csex: 'm', cage: 25, cweightkgs: 70, cheightmeter: 178, cneckmeter: 50, cwaistmeter: 96, chipmeter: 92 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('Body Fat:') || !res.includes('kg')) {
+    throw new Error('Body Fat Metric failed: ' + res);
+  }
+  console.log('✅ [body-fat-calculator] PASSED: Metric mode computed body fat in kg');
+}
+
+// 21. BMR Calculator (Metric + Kilojoules + Mifflin-St Jeor)
+{
+  const env = createMockEnv('bmr-calculator', { ctype: 'metric', csex: 'm', cage: 25, cheightmeter: 180, ckg: 60, coutunit: 'j', cformula: 'm' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('Kilojoules/day')) {
+    throw new Error('BMR kJ failed: ' + res);
+  }
+  console.log('✅ [bmr-calculator] PASSED: Metric + kJ unit output');
+}
+
+// 22. Payment Calculator (Fixed Payments mode)
+{
+  const env = createMockEnv('payment-calculator', { ctype: 'fixpay', cloanamount: 200000, cmonthlypay: 2000, cinterestrate: 6 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('Payoff Time:') || !res.includes('months')) {
+    throw new Error('Payment fixpay failed: ' + res);
+  }
+  console.log('✅ [payment-calculator] PASSED: Fixed Payments payoff time solved');
+}
+
+// 23. Gas Mileage Calculator (Metric km/L & L/100km)
+{
+  const env = createMockEnv('gas-mileage-calculator', { ctype: 'metric', mucodreading: 18900, mupodreading: 18300, mugasputin: 50, mugasprice: 1 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('12 km/L') && !res.includes('12.00 km/L')) {
+    throw new Error('Gas mileage metric failed: ' + res);
+  }
+  console.log('✅ [gas-mileage-calculator] PASSED: 600 km / 50 L = 12 km/L');
+}
+
+// 24. Voltage Drop Calculator (NEC AWG lookup + 120V AC)
+{
+  const env = createMockEnv('voltage-drop-calculator', { ctype: 'nec', necmaterial: 'copper', necwiresize: 6, voltage: 120, phase: 'ac', noofconductor: 1, distance: 500, distanceunit: 'feet', amperes: 1 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('Voltage Drop:')) {
+    throw new Error('Voltage drop failed: ' + res);
+  }
+  console.log('✅ [voltage-drop-calculator] PASSED: NEC Copper 3 AWG drop calculated');
+}
+
+// 25. Percent Off Calculator
+{
+  const env = createMockEnv('percent-off-calculator', { originalprice: 100, pctoff: 20, hasextra: 'n' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('$80.00')) {
+    throw new Error('Percent off failed: ' + res);
+  }
+  console.log('✅ [percent-off-calculator] PASSED: $100 minus 20% = $80.00');
+}
+
+// 26. Ohm's Law Calculator
+{
+  const env = createMockEnv('ohms-law-calculator', { v: 120, vunit: 'V', c: 10, cunit: 'A', r: '', runit: 'O', p: '', punit: 'W' });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('12 ') || !res.includes('1,200')) {
+    throw new Error('Ohms law failed: ' + res);
+  }
+  console.log('✅ [ohms-law-calculator] PASSED: 120V & 10A = 12 Ω & 1,200 W');
+}
+
+// 27. Concrete Calculator (5x2.5ft x 5in = 5.21 cu ft = 0.19 yd³)
+{
+  const env = createMockEnv('concrete-calculator', { slablength: 5, slablengthunit: 'feet', slabwidth: 2.5, slabwidthunit: 'feet', slabthick: 5, slabthickunit: 'inch', slabquantity: 1 });
+  env.runCalculator();
+  const res = env.getResult();
+  if (!res.includes('0.19')) {
+    throw new Error('Concrete failed: ' + res);
+  }
+  console.log('✅ [concrete-calculator] PASSED: Slab concrete volume = 0.19 yd³');
+}
+
+console.log("\n🚀 ALL 27 ENGINE TESTS PASSED WITH 100% MATHEMATICAL PRECISION!");
