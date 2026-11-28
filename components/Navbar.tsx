@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useSyncExternalStore } from "react";
+import React, { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -24,6 +24,9 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [prevPathname, setPrevPathname] = useState(pathname);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const currentTheme = useSyncExternalStore(subscribeTheme, getClientTheme, getServerTheme);
 
@@ -33,25 +36,45 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   }
 
-  // Lock body scroll when mobile menu is open & close on Escape
+  // Lock body scroll when mobile menu is open, manage focus trap & Escape
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
+      const focusTimer = setTimeout(() => {
+        closeBtnRef.current?.focus();
+      }, 40);
+
+      const onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setMobileMenuOpen(false);
+          hamburgerRef.current?.focus();
+        } else if (e.key === "Tab" && drawerRef.current) {
+          const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusable.length > 0) {
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }
+      };
+      window.addEventListener("keydown", onKeyDown);
+
+      return () => {
+        clearTimeout(focusTimer);
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", onKeyDown);
+      };
     }
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && mobileMenuOpen) {
-        setMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
-    };
+    document.body.style.overflow = "";
   }, [mobileMenuOpen]);
 
   const setDrawerTheme = (mode: ThemeMode) => {
@@ -146,6 +169,7 @@ export default function Navbar() {
 
             {/* Mobile Hamburger Toggle (44px x 44px touch target) */}
             <button
+              ref={hamburgerRef}
               type="button"
               className={`mobile-hamburger-btn ${mobileMenuOpen ? "active" : ""}`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -172,15 +196,20 @@ export default function Navbar() {
             aria-label="Mobile Navigation Menu"
           >
             <div
+              ref={drawerRef}
               className="mobile-drawer-content"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mobile-drawer-header">
                 <span className="mobile-drawer-title">All-in-one-calculator</span>
                 <button
+                  ref={closeBtnRef}
                   type="button"
                   className="mobile-drawer-close"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    hamburgerRef.current?.focus();
+                  }}
                   aria-label="Close menu"
                 >
                   <CloseIcon size={20} />

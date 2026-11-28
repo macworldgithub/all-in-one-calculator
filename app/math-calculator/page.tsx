@@ -48,7 +48,7 @@ export default function MathCalculatorPage() {
                 className="hub-calc-card"
               >
                 <div className="hub-calc-title-row">
-                  <h3 className="hub-calc-title">{calc.title}</h3>
+                  <h2 className="hub-calc-title">{calc.title}</h2>
                   <span className="hub-calc-arrow">&rarr;</span>
                 </div>
                 {calc.description && (

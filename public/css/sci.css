@@ -31,7 +31,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 .calc-frame-badge {
   font-size: 11px;
@@ -64,16 +64,18 @@
 
 .calc-mode-btn,
 .calc-tab-btn {
-  padding: 5px 11px;
+  padding: 6px 12px;
+  min-height: 36px;
   font-size: 12px;
   font-weight: 600;
   border-radius: 7px;
   border: none;
   cursor: pointer;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   transition: all 0.15s ease;
-  line-height: 1;
+  line-height: 1.1;
+  touch-action: manipulation;
 }
 
 .calc-mode-btn.active,
@@ -277,11 +279,12 @@
   border-color: #334155 !important;
 }
 .btn-num:hover, .scinm:hover {
-  background: #f8fafc !important;
-  border-color: #94a3b8 !important;
+  background: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #64748b !important;
 }
 .btn-num:active, .scinm:active {
-  background: #f1f5f9 !important;
+  background: #475569 !important;
   transform: scale(0.96);
 }
 
@@ -495,14 +498,14 @@ html.light .calc-mode-btn,
 html.light .calc-tab-btn,
 [data-theme="light"] .calc-mode-btn,
 [data-theme="light"] .calc-tab-btn {
-  color: #64748b !important;
+  color: #475569 !important;
 }
 html.light .calc-mode-btn.active,
 html.light .calc-tab-btn.active,
 [data-theme="light"] .calc-mode-btn.active,
 [data-theme="light"] .calc-tab-btn.active {
   background: #ffffff !important;
-  color: #2563eb !important;
+  color: #1d4ed8 !important;
 }
 html.light .btn-num,
 html.light .scinm,
@@ -511,6 +514,14 @@ html.light .scinm,
   background: #ffffff !important;
   color: #0f172a !important;
   border-color: #e2e8f0 !important;
+}
+html.light .btn-num:hover,
+html.light .scinm:hover,
+[data-theme="light"] .btn-num:hover,
+[data-theme="light"] .scinm:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
 }
 html.light .btn-fx,
 html.light .scifunc,
@@ -534,8 +545,17 @@ html.light .calc-history-drawer,
 
 
 /* ==========================================================================
-   SCIENTIFIC CALCULATOR FLUID MOBILE GRID
+   SCIENTIFIC CALCULATOR FLUID MOBILE GRID (Consolidated Single Breakpoint Set)
    ========================================================================== */
+@media (max-width: 768px) {
+  .calc-mode-btn,
+  .calc-tab-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 8px 12px !important;
+  }
+}
+
 @media (max-width: 480px) {
   .modern-calc-card, #sciout {
     padding: 10px 8px !important;
@@ -548,14 +568,15 @@ html.light .calc-history-drawer,
   .calc-num-grid {
     display: grid !important;
     grid-template-columns: repeat(5, 1fr) !important;
-    gap: 3px !important;
+    gap: 4px !important;
     width: 100% !important;
   }
   .calc-btn, .scifunc, .scinm, .sciop, .scieq, .scird {
-    height: 36px !important;
-    font-size: 11.5px !important;
+    height: auto !important;
+    min-height: 44px !important;
+    font-size: 12px !important;
     border-radius: 6px !important;
-    padding: 0 1px !important;
+    padding: 0 2px !important;
     min-width: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
@@ -564,36 +585,36 @@ html.light .calc-history-drawer,
     white-space: nowrap !important;
   }
   .btn-fx, .scifunc {
-    font-size: 10.5px !important;
+    font-size: 11px !important;
   }
   #sciout > div:not(:first-child) > div {
-    gap: 3px !important;
-    margin-bottom: 3px !important;
+    gap: 4px !important;
+    margin-bottom: 4px !important;
   }
   .calc-display-screen, #sciout > div:first-child {
     padding: 10px 12px !important;
     border-radius: 10px !important;
   }
   .calc-main-output, #sciOutPut {
-    font-size: 22px !important;
+    font-size: clamp(20px, 6vw, 24px) !important;
   }
 }
 
 @media (max-width: 360px) {
   .modern-calc-card, #sciout {
-    padding: 8px 5px !important;
+    padding: 8px 6px !important;
   }
   .calc-fx-grid,
   .calc-num-grid {
-    gap: 2px !important;
+    gap: 3px !important;
   }
   .calc-btn, .scifunc, .scinm, .sciop, .scieq, .scird {
-    height: 32px !important;
-    font-size: 10px !important;
-    padding: 0 !important;
+    min-height: 44px !important;
+    font-size: 11px !important;
+    padding: 0 1px !important;
   }
   .btn-fx, .scifunc {
-    font-size: 9px !important;
+    font-size: 10px !important;
   }
   .calc-main-output, #sciOutPut {
     font-size: 20px !important;

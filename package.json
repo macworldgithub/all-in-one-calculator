@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/test-calculators.js"
+    "test": "node scripts/test-calculators.js",
+    "test:ui": "node scripts/test-ui-responsive.js"
   },
   "dependencies": {
     "next": "16.4.6",

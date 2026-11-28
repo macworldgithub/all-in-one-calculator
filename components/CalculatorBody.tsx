@@ -38,6 +38,57 @@ export default function CalculatorBody({
       }
     });
 
+    // Enhance legacy calculator HTML with accessible attributes & mobile input modes
+    const imgs = container.querySelectorAll("img");
+    imgs.forEach((img) => {
+      if (!img.hasAttribute("alt")) {
+        if (img.classList.contains("ttimg")) {
+          img.setAttribute("alt", "Help information");
+        } else if (img.getAttribute("src")?.includes("save")) {
+          img.setAttribute("alt", "Save calculation");
+        } else {
+          img.setAttribute("alt", "");
+        }
+      }
+      if (img.hasAttribute("onclick") || img.classList.contains("ttimg")) {
+        if (!img.hasAttribute("role")) img.setAttribute("role", "button");
+        if (!img.hasAttribute("tabindex")) img.setAttribute("tabindex", "0");
+      }
+    });
+
+    const NON_NUMERIC_FIELD_RE = /^(cmf|ccc|from|to|url|text|pass|cx|cy|calcSearch)/i;
+    const textInputs = container.querySelectorAll<HTMLInputElement>(
+      'input[type="text"].innormal, input[type="text"].inhalf, input[type="text"].inlong, input[type="text"].inlonger, input[type="text"].inlongest, input[type="text"].in4char, input[type="text"].in3char, input[type="text"].in2char, input[type="text"].indollar, input[type="text"].inpct'
+    );
+    textInputs.forEach((inp) => {
+      const idOrName = `${inp.name || ""} ${inp.id || ""}`;
+      if (!inp.hasAttribute("inputmode") && !NON_NUMERIC_FIELD_RE.test(idOrName.trim())) {
+        inp.setAttribute("inputmode", "decimal");
+      }
+    });
+
+    const handleContainerKeyDown = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t || t.tagName !== "IMG") return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        t.click();
+      }
+    };
+    const handleContainerClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && t.tagName === "IMG" && t.classList.contains("ttimg")) {
+        const hoverAttr = t.getAttribute("onmouseover");
+        const ttFn = (window as unknown as { tooltip?: { show?: (html: string, mode?: string) => void } }).tooltip;
+        const m = hoverAttr?.match(/tooltip\.show\(\s*(['"])([\s\S]*?)\1/);
+        if (m && ttFn && typeof ttFn.show === "function") {
+          ttFn.show(m[2], "m");
+        }
+      }
+    };
+    container.addEventListener("keydown", handleContainerKeyDown);
+    container.addEventListener("click", handleContainerClick);
+
     const loadExternalScript = (src: string): Promise<void> => {
       return new Promise((resolve) => {
         if (document.querySelector(`script[src="${src}"]`)) {
@@ -115,6 +166,8 @@ export default function CalculatorBody({
 
     return () => {
       cancelled = true;
+      container.removeEventListener("keydown", handleContainerKeyDown);
+      container.removeEventListener("click", handleContainerClick);
       injectedNodes.forEach((node) => {
         if (node.parentNode) node.parentNode.removeChild(node);
       });

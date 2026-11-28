@@ -98,10 +98,13 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
             onFocus={() => setIsFocused(true)}
             style={{
               flex: 1,
+              minWidth: 0,
+              width: "100%",
+              minHeight: "40px",
               border: "none",
               outline: "none",
               fontSize: "14px",
-              padding: "8px 8px",
+              padding: "8px 6px",
               color: "var(--text-primary)",
               background: "transparent",
             }}
@@ -119,10 +122,14 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
                 background: "transparent",
                 color: "var(--text-muted)",
                 cursor: "pointer",
+                minWidth: "40px",
+                minHeight: "40px",
                 padding: "4px",
-                marginRight: "4px",
+                marginRight: "2px",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
               }}
               aria-label="Clear search"
             >
@@ -132,17 +139,19 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
 
           <button
             type="submit"
-            id="bluebtn"
+            className="search-submit-btn"
             style={{
               background: "var(--color-primary)",
               color: "#ffffff",
               border: "none",
               borderRadius: "8px",
-              padding: "8px 16px",
+              padding: "8px 12px",
+              minHeight: "44px",
               fontSize: "13px",
               fontWeight: 600,
               cursor: "pointer",
               flexShrink: 0,
+              whiteSpace: "nowrap",
               boxShadow: "0 1px 2px rgba(37,99,235,0.2)",
             }}
           >
@@ -153,7 +162,9 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
         {/* Autocomplete Results Dropdown */}
         {isOpen && (
           <div
-            id="calcSearchOut"
+            className="calc-search-dropdown"
+            role="listbox"
+            aria-label="Search suggestions"
             style={{
               position: "absolute",
               top: "calc(100% + 6px)",
@@ -162,7 +173,7 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
               background: "var(--bg-card)",
               border: "1px solid var(--border-subtle)",
               borderRadius: "12px",
-              zIndex: 100,
+              zIndex: "var(--z-dropdown, 250)" as unknown as number,
               boxShadow: "var(--shadow-lg)",
               textAlign: "left",
               overflow: "hidden",
@@ -173,11 +184,13 @@ export default function SearchBox({ alignCenter = false }: SearchBoxProps) {
                 <Link
                   key={r.url}
                   href={r.url}
+                  role="option"
                   onClick={() => setIsFocused(false)}
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    minHeight: "44px",
                     padding: "10px 14px",
                     borderBottom: "1px solid var(--border-subtle)",
                     textDecoration: "none",

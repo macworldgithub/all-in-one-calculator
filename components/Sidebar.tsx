@@ -24,7 +24,7 @@ export default function Sidebar({
           <Link href="/pregnancy-calculator" className="sidebar-link">Pregnancy Calculator</Link>
           <Link href="/due-date-calculator" className="sidebar-link">Due Date Calculator</Link>
           <Link href="/tdee-calculator" className="sidebar-link">TDEE Calculator</Link>
-          <Link href="/fitness-and-health-calculator" style={{ color: "#2563eb", fontWeight: 600, padding: "8px 10px", marginTop: "4px" }}>
+          <Link href="/fitness-and-health-calculator" className="sidebar-link" style={{ color: "var(--color-primary)", fontWeight: 600, marginTop: "4px" }}>
             More Health Tools &rarr;
           </Link>
         </div>
@@ -40,7 +40,7 @@ export default function Sidebar({
           <Link href="/triangle-calculator" className="sidebar-link">Triangle Calculator</Link>
           <Link href="/standard-deviation-calculator" className="sidebar-link">Standard Deviation</Link>
           <Link href="/matrix-calculator" className="sidebar-link">Matrix Calculator</Link>
-          <Link href="/math-calculator" style={{ color: "#2563eb", fontWeight: 600, padding: "8px 10px", marginTop: "4px" }}>
+          <Link href="/math-calculator" className="sidebar-link" style={{ color: "var(--color-primary)", fontWeight: 600, marginTop: "4px" }}>
             More Math Tools &rarr;
           </Link>
         </div>
@@ -60,7 +60,7 @@ export default function Sidebar({
           <Link href="/password-generator" className="sidebar-link">Password Generator</Link>
           <Link href="/conversion-calculator" className="sidebar-link">Conversion Calculator</Link>
           <Link href="/tip-calculator" className="sidebar-link">Tip Calculator</Link>
-          <Link href="/other-calculator" style={{ color: "#2563eb", fontWeight: 600, padding: "8px 10px", marginTop: "4px" }}>
+          <Link href="/other-calculator" className="sidebar-link" style={{ color: "var(--color-primary)", fontWeight: 600, marginTop: "4px" }}>
             More Everyday Tools &rarr;
           </Link>
         </div>
@@ -85,7 +85,7 @@ export default function Sidebar({
         <Link href="/compound-interest-calculator" className="sidebar-link">Compound Interest</Link>
         <Link href="/salary-calculator" className="sidebar-link">Salary Calculator</Link>
         <Link href="/401k-calculator" className="sidebar-link">401(k) Calculator</Link>
-        <Link href="/financial-calculator" style={{ color: "#2563eb", fontWeight: 600, padding: "8px 10px", marginTop: "4px" }}>
+        <Link href="/financial-calculator" className="sidebar-link" style={{ color: "var(--color-primary)", fontWeight: 600, marginTop: "4px" }}>
           More Financial Tools &rarr;
         </Link>
       </div>

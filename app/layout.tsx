@@ -81,9 +81,14 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <a href="#main-content" className="skip-to-content">
+          Skip to main content
+        </a>
         <Navbar />
 
-        {children}
+        <div id="main-content" tabIndex={-1} style={{ flex: "1 0 auto", minWidth: 0 }}>
+          {children}
+        </div>
 
         {/* Global Modals: Command Palette (Ctrl+K) & History Drawer */}
         <CommandPalette />
@@ -119,9 +124,9 @@ export default function RootLayout({
 
               {/* Finance */}
               <div className="footer-col">
-                <h4 className="footer-heading">
+                <h2 className="footer-heading">
                   <Link href="/financial-calculator">Financial</Link>
-                </h4>
+                </h2>
                 <ul className="footer-links">
                   <li><Link href="/mortgage-calculator">Mortgage Calculator</Link></li>
                   <li><Link href="/loan-calculator">Loan Calculator</Link></li>
@@ -134,9 +139,9 @@ export default function RootLayout({
 
               {/* Health */}
               <div className="footer-col">
-                <h4 className="footer-heading">
+                <h2 className="footer-heading">
                   <Link href="/fitness-and-health-calculator">Fitness &amp; Health</Link>
-                </h4>
+                </h2>
                 <ul className="footer-links">
                   <li><Link href="/bmi-calculator">BMI Calculator</Link></li>
                   <li><Link href="/calorie-calculator">Calorie Calculator</Link></li>
@@ -149,9 +154,9 @@ export default function RootLayout({
 
               {/* Math & Other */}
               <div className="footer-col">
-                <h4 className="footer-heading">
+                <h2 className="footer-heading">
                   <Link href="/math-calculator">Math &amp; Tools</Link>
-                </h4>
+                </h2>
                 <ul className="footer-links">
                   <li><Link href="/scientific-calculator">Scientific Calculator</Link></li>
                   <li><Link href="/fraction-calculator">Fraction Calculator</Link></li>
